@@ -1,0 +1,23 @@
+#ignore roxygen2 generated files
+NAMESPACE
+*.Rd
+!*-package.Rd
+
+#ignore temporary files
+*~
+*.swp
+
+#ignore package for CRAN
+/pkg-cran/
+
+#ignore R session files
+.Rhistory
+.RData
+
+#ignore R CMD build/check genrated files
+/*.Rcheck/
+/*.tar.gz
+
+#ignore generated object files
+*.[oa]
+*.so
