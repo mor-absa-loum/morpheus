@@ -39,8 +39,11 @@
 #'       model=FLXMRglm(family="binomial") ) )
 #'     normalize( matrix(out@@coef[1:(ncol(fargs$X)*K)], ncol=K) )
 #'   } ),
-#'   prepareArgs = function(fargs) {
-#'     fargs$ind <- sample(1:nrow(fargs$X),replace=TRUE)
+#'   prepareArgs = function(fargs,index) {
+#'     if (index == 1)
+#'       fargs$ind <- 1:nrow(fargs$X)
+#'     else
+#'       fargs$ind <- sample(1:nrow(fargs$X),replace=TRUE)
 #'     fargs
 #'   }, N=10, ncores=3)
 #' for (i in 1:2)
@@ -65,7 +68,7 @@
 #'       model=FLXMRglm(family="binomial") ) )
 #'     sapply( seq_len(K), function(i) as.double( out@@components[[1]][[i]][,1] ) )
 #'   } ),
-#'   prepareArgs = function(fargs) {
+#'   prepareArgs = function(fargs,index) {
 #'     library(morpheus)
 #'     io = generateSampleIO(fargs$n, fargs$p, fargs$β, fargs$b, fargs$optargs$link)
 #'     fargs$X = io$X
@@ -78,7 +81,7 @@
 #'   res[[i]] <- alignMatrices(res[[i]], ref=β, ls_mode="exact")}
 #' @export
 multiRun <- function(fargs, estimParams,
-	prepareArgs = function(x) x, N=10, ncores=3, agg=lapply, verbose=FALSE)
+	prepareArgs = function(x,i) x, N=10, ncores=3, agg=lapply, verbose=FALSE)
 {
 	if (!is.list(fargs))
 		stop("fargs: list")
@@ -95,7 +98,7 @@ multiRun <- function(fargs, estimParams,
 
 	estimParamAtIndex <- function(index)
 	{
-		fargs <- prepareArgs(fargs)
+		fargs <- prepareArgs(fargs, index)
 		if (verbose)
 			cat("Run ",index,"\n")
 		lapply(seq_along(estimParams), function(i) {

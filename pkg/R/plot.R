@@ -18,7 +18,7 @@ extractParam <- function(mr, x=1, y=1)
 #'
 #' @param mr Output of multiRun(), list of lists of functions results
 #' @param x Row index of the element inside the aggregated parameter
-#' @param y Colomn index of the element inside the aggregated parameter
+#' @param y Column index of the element inside the aggregated parameter
 #'
 #' @examples
 #' \dontrun{
