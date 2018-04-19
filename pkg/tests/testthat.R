@@ -1,5 +1,10 @@
 library(testthat)
-#library(morpheus)
-load_all()
+
+# Locally:
+#library(devtools)
+#load_all("../")
+
+# With R CMD check:
+library(morpheus)
 
 test_check("morpheus")

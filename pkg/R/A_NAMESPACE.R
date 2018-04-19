@@ -3,8 +3,8 @@
 #' @useDynLib morpheus
 #'
 #' @importFrom jointDiag ajd
-#' @importFrom stats rbinom rmultinom rnorm pnorm runif integrate
-#' @importFrom graphics boxplot barplot hist par
+#' @importFrom stats rbinom rmultinom rnorm pnorm runif integrate sd
+#' @importFrom graphics boxplot barplot hist par matplot
 #' @importFrom methods new
 #' @importFrom pracma integral
 #'

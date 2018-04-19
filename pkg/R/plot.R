@@ -115,6 +115,9 @@ plotCoefs <- function(mr, params)
 #' Draw 3D map of objective function values
 #'
 #' @param N Number of starting points
+#' @param n Number of points in sample
+#' @param p Vector of proportions
+#' @param b Vector of biases
 #' @param β Regression matrix (target)
 #' @param link Link function (logit or probit)
 #'

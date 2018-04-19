@@ -11,6 +11,7 @@
 #' @param prepareArgs Prepare arguments for the functions inside estimParams
 #' @param N Number of runs
 #' @param ncores Number of cores for parallel runs (<=1: sequential)
+#' @param agg Aggregation method (default: lapply)
 #' @param verbose TRUE to indicate runs + methods numbers
 #'
 #' @return A list of nf aggregates of N results (matrices).

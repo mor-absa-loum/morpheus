@@ -56,11 +56,6 @@ optimParams = function(K, link=c("logit","probit"), optargs=list())
 		M <- computeMoments(optargs$X,optargs$Y)
 	}
 
-	# TODO: field?!
-	exactComp <<- optargs$exact
-	if (is.null(exactComp))
-		exactComp <<- FALSE
-
 	# Build and return optimization algorithm object
 	methods::new("OptimParams", "li"=link, "M1"=as.double(M[[1]]),
 		"M2"=as.double(M[[2]]), "M3"=as.double(M[[3]]), "K"=as.integer(K))
@@ -248,6 +243,8 @@ setRefClass(
 	# NOTE: weird "integral divergent" error on inputs:
 	# link="probit"; order=2; λ=c(531.8099,586.8893,523.5816); b=c(-118.512674,-3.488020,2.109969)
 	# Switch to pracma package for that (but it seems slow...)
+
+	exactComp <- FALSE #TODO: global, or argument...
 
 	if (exactComp && link == "probit")
 	{

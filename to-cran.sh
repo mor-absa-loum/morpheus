@@ -9,6 +9,7 @@ for file in `find -name *.R`; do
 	if [ -f $file ]; then
 		sed -i 's/μ/mu/g' $file
 		sed -i 's/β/beta/g' $file
+		sed -i 's/ρ/rho/g' $file
 		sed -i 's/λ/lambda/g' $file
 		sed -i 's/Σ/Sigma/g' $file
 	fi

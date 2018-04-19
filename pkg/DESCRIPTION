@@ -16,6 +16,7 @@ Imports:
     methods,
     pracma
 Suggests:
+    devtools,
     flexmix,
     parallel,
     testthat,
