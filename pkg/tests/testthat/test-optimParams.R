@@ -50,7 +50,7 @@ naive_f = function(link, M1,M2,M3, p,β,b)
 test_that("naive computation provides the same result as vectorized computations",
 {
 	h <- 1e-7 #for finite-difference tests
-	tol <- .25 * sqrt(h) #about 7.9 e-5
+	tol <- 5e-4 #.25 * sqrt(h) #about 7.9 e-5
 	for (dK in list( c(2,2), c(5,3)))
 	{
 		d = dK[1]
