@@ -21,7 +21,7 @@ extractParam <- function(mr, x=1, y=1)
 #' @param y Column index of the element inside the aggregated parameter
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' β <- matrix(c(1,-2,3,1),ncol=2)
 #' mr <- multiRun(...) #see bootstrap example in ?multiRun : return lists of mu_hat
 #' μ <- normalize(β)

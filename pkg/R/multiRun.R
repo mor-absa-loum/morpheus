@@ -17,7 +17,7 @@
 #' @return A list of nf aggregates of N results (matrices).
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' β <- matrix(c(1,-2,3,1),ncol=2)
 #'
 #' # Bootstrap + computeMu, morpheus VS flexmix ; assumes fargs first 3 elts X,Y,K
