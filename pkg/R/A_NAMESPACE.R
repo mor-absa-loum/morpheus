@@ -1,6 +1,6 @@
 #' @include utils.R
 #'
-#' @useDynLib morpheus
+#' @useDynLib morpheus, .registration = TRUE
 #'
 #' @importFrom jointDiag ajd
 #' @importFrom stats rbinom rmultinom rnorm pnorm runif integrate sd
