@@ -4,11 +4,12 @@ Description: Mixture of logistic regressions parameters (H)estimation with
     (U)spectral methods. The main methods take d-dimensional inputs and a vector
     of binary outputs, and return parameters according to the GLMs mixture model
     (General Linear Model). For more details see chapter 3 in the PhD thesis of
-		Mor-Absa Loum: <http://www.theses.fr/s156435>.
+		Mor-Absa Loum: <http://www.theses.fr/s156435>, available here
+		<https://www.math.u-psud.fr/~loum/IMG/pdf/these.compressed-2.pdf>.
 Version: 0.2-0
-Author: Benjamin Auder <Benjamin.Auder@math.u-psud.fr> [aut,cre],
-    Mor-Absa Loum <Mor-Absa.Loum@math.u-psud.fr> [aut]
-Maintainer: Benjamin Auder <Benjamin.Auder@math.u-psud.fr>
+Author: Benjamin Auder <Benjamin.Auder@u-psud.fr> [aut,cre],
+    Mor-Absa Loum <Mor-Absa.Loum@u-psud.fr> [aut]
+Maintainer: Benjamin Auder <Benjamin.Auder@u-psud.fr>
 Depends:
     R (>= 3.0.0),
 Imports:
