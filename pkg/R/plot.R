@@ -104,7 +104,7 @@ plotCoefs <- function(mr, params)
 		avg_param <- as.double(params_hat[[i]])
 		std_param <- as.double(stdev[[i]])
 		matplot(cbind(params[o],avg_param[o],avg_param[o]+std_param[o],avg_param[o]-std_param[o]),
-			col=c(2,1,1,1), lty=c(1,1,2,2), type="l", lwd=2, xlab="param", ylab="value")
+			col=1, lty=c(1,5,2,2), type="l", lwd=2, xlab="param", ylab="value")
 	}
 
 	#print(o) #not returning o to avoid weird Jupyter issue... (TODO:)
