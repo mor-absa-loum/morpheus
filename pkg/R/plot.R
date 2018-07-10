@@ -64,48 +64,37 @@ plotBox <- function(mr, x, y)
 #'
 #' @inheritParams plotHist
 #' @param params True value of parameters matrix
+#' @param idx List index to process in mr
 #'
 #' @examples
 #' #See example in ?plotHist
 #' @export
-plotCoefs <- function(mr, params)
+plotCoefs <- function(mr, params, idx)
 {
-	nf <- length(mr)
 	L <- nrow(mr[[1]][[1]])
 	K <- ncol(mr[[1]][[1]])
 
-	params_hat <- vector("list", nf)
-	stdev <- vector("list", nf)
-	for (i in 1:nf)
-	{
-		params_hat[[i]] <- matrix(nrow=L, ncol=K)
-		stdev[[i]] <- matrix(nrow=L, ncol=K)
-	}
+	params_hat <- matrix(nrow=L, ncol=K)
+	stdev <- matrix(nrow=L, ncol=K)
 	for (x in 1:L)
 	{
 		for (y in 1:K)
 		{
 			estims <- extractParam(mr, x, y)
-			for (i in 1:nf)
-			{
-				params_hat[[i]][x,y] <- mean(estims[[i]])
-#				stdev[[i]][x,y] <- sqrt( mean( (estims[[i]] - params[x,y])^2 ) )
-				# HACK remove extreme quantile in estims[[i]] before computing sd()
-				stdev[[i]][x,y] <- sd( estims[[i]] [ estims[[i]] < max(estims[[i]]) & estims[[i]] > min(estims[[i]]) ] )
-			}
+			params_hat[x,y] <- mean(estims[[idx]])
+#			stdev[x,y] <- sqrt( mean( (estims[[idx]] - params[x,y])^2 ) )
+			# HACK remove extreme quantile in estims[[i]] before computing sd()
+			stdev[x,y] <- sd( estims[[idx]] ) #[ estims[[idx]] < max(estims[[idx]]) & estims[[idx]] > min(estims[[idx]]) ] )
 		}
 	}
 
-	par(mfrow=c(1,nf), cex.axis=1.5, cex.lab=1.5, mar=c(4.7,5,1,1))
+	par(cex.axis=1.5, cex.lab=1.5, mar=c(4.7,5,1,1))
 	params <- as.double(params)
 	o <- order(params)
-	for (i in 1:nf)
-	{
-		avg_param <- as.double(params_hat[[i]])
-		std_param <- as.double(stdev[[i]])
-		matplot(cbind(params[o],avg_param[o],avg_param[o]+std_param[o],avg_param[o]-std_param[o]),
-			col=1, lty=c(1,5,2,2), type="l", lwd=2, xlab="param", ylab="value")
-	}
+	avg_param <- as.double(params_hat)
+	std_param <- as.double(stdev)
+	matplot(cbind(params[o],avg_param[o],avg_param[o]+std_param[o],avg_param[o]-std_param[o]),
+		col=1, lty=c(1,5,3,3), type="l", lwd=2, xlab="Parameter", ylab="Value")
 
 	#print(o) #not returning o to avoid weird Jupyter issue... (TODO:)
 }
