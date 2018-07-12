@@ -9,6 +9,7 @@ NAMESPACE
 
 #ignore package for CRAN
 /pkg-cran/
+/reports/
 
 #ignore R session files
 .Rhistory
