@@ -69,7 +69,7 @@ plotBox <- function(mr, x, y)
 #' @examples
 #' #See example in ?plotHist
 #' @export
-plotCoefs <- function(mr, params, idx)
+plotCoefs <- function(mr, params, idx, xtitle="Parameter")
 {
 	L <- nrow(mr[[1]][[1]])
 	K <- ncol(mr[[1]][[1]])
@@ -94,7 +94,7 @@ plotCoefs <- function(mr, params, idx)
 	avg_param <- as.double(params_hat)
 	std_param <- as.double(stdev)
 	matplot(cbind(params[o],avg_param[o],avg_param[o]+std_param[o],avg_param[o]-std_param[o]),
-		col=1, lty=c(1,5,3,3), type="l", lwd=2, xlab="Parameter", ylab="Value")
+		col=1, lty=c(1,5,3,3), type="l", lwd=2, xlab=xtitle, ylab="")
 
 	#print(o) #not returning o to avoid weird Jupyter issue... (TODO:)
 }
