@@ -1,0 +1,162 @@
+---
+title: morpheus...........
+
+output:
+  pdf_document:
+    number_sections: true
+    toc_depth: 1
+---
+
+```{r setup,  results="hide", include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, include = TRUE,
+  cache = TRUE, comment="", cache.lazy = FALSE,
+  out.width = "100%", fig.align = "center")
+```
+
+0) Tell that we try to learn classification parameters in a non-EM way, using algebric manipulations.
+1) Model.
+2) Algorithm (as in article)
+3) Experiments: show package usage
+
+# Expériences
+
+```{r, results="show", include=TRUE, echo=TRUE}
+library(Rmixmod) #to get clustering probability matrix
+library(ClusVis)
+library(FactoMineR) #for PCA
+
+plotPCA <- function(prob)
+{
+  par(mfrow=c(2,2), mar=c(4,4,2,2), mgp=c(2,1,0))
+  partition <- apply(prob, 1, which.max)
+  n <- nrow(prob)
+  K <- ncol(prob)
+  palette <- rainbow(K, s=.5)
+  cols <- palette[partition]
+  tmp <- PCA(rbind(prob, diag(K)), ind.sup=(n+1):(n+K), scale.unit=F, graph=F)
+  scores <- tmp$ind$coord[,1:3] #samples coords, by rows
+  ctrs <- tmp$ind.sup$coord #projections of indicator vectors (by cols)
+  for (i in 1:2)
+  {
+    for (j in (i+1):3)
+    {
+      absc <- scores[,i]
+      ords <- scores[,j]
+      xrange <- range(absc)
+      yrange <- range(ords)
+      plot(absc, ords, col=c(cols,rep(colors()[215],K),rep(1,K)),
+        pch=c(rep("o",n),rep(as.character(1:K),2)),
+        xlim=xrange, ylim=yrange,
+        xlab=paste0("Dim ", i, " (", round(tmp$eig[i,2],2), "%)"),
+        ylab=paste0("Dim ", j, " (", round(tmp$eig[j,2],2), "%)"))
+      ctrsavg <- t(apply(as.matrix(palette), 1,
+        function(cl) c(mean(absc[cols==cl]), mean(ords[cols==cl]))))
+			text(ctrsavg[,1], ctrsavg[,2], as.character(1:K), col=colors()[215])
+			text(ctrs[,i], ctrs[,j], as.character(1:K), col=1)
+			title(paste0("PCA ", i, "-", j, " / K=",K))
+    }
+  }
+  # TODO:
+  plot(0, xaxt="n", yaxt="n", xlab="", ylab="", col="white", bty="n")
+}
+
+plotClvz <- function(xem, alt=FALSE)
+{
+  par(mfrow=c(2,2), mar=c(4,4,2,2), mgp=c(2,1,0))
+  if (alt) {
+    resvisu <- clusvis(log(xem@bestResult@proba), xem@bestResult@parameters@proportions)
+  } else {
+    resvisu <- clusvisMixmod(xem)
+  }
+  plotDensityClusVisu(resvisu, positionlegend=NULL)
+  plotDensityClusVisu(resvisu, add.obs=TRUE, positionlegend=NULL)
+  # TODO:
+  plot(0, xaxt="n", yaxt="n", xlab="", ylab="", col="white", bty="n")
+  plot(0, xaxt="n", yaxt="n", xlab="", ylab="", col="white", bty="n")
+}
+
+grlplot <- function(x, K, alt=FALSE) #x: data, K: nb classes
+{
+  xem <- mixmodCluster(x, K, strategy=mixmodStrategy(nbTryInInit=500,nbTry=25))
+  plotPCA(xem@results[[1]]@proba)
+  plotClvz(xem, alt)
+}
+```
+
+## Iris data
+
+```{r, results="show", include=TRUE, echo=TRUE}
+data(iris)
+x <- iris[,-5] #remove class info
+for (i in 3:5)
+{
+  print(paste("Resultats en", i, "classes"))
+  grlplot(x, i)
+}
+```
+
+### finance dataset (from Rmixmod package)
+#
+#This dataset has two categorical attributes (the year and financial status), and four continuous ones.
+#
+#Warnings, some probabilities of classification are exactly equal to zero then we cannot use ClusVis
+#
+#```{r, results="show", include=TRUE, echo=TRUE}
+#data(finance)
+#x <- finance[,-2]
+#for (i in 3:5)
+#{
+#  print(paste("Resultats en", i, "classes"))
+#  grlplot(x, i, TRUE)
+#}
+#```
+#
+### "Cathy dataset" (12 clusters)
+#
+#Warnings, some probabilities of classification are exactly equal to zero then we cannot use ClusVis
+#
+#```{r, results="hide", include=TRUE, echo=TRUE}
+#cathy12 <- as.matrix(read.table("data/probapostCatdbBlocAtrazine-K12.txt"))
+#resvisu <- clusvis(log(cathy12), prop = colMeans(cathy12))
+#par(mfrow=c(2,2), mar=c(4,4,2,2), mgp=c(2,1,0))
+#plotDensityClusVisu(resvisu, positionlegend = NULL)
+#plotDensityClusVisu(resvisu,  add.obs = TRUE, positionlegend = NULL)
+#plotPCA(cathy12)
+#```
+#
+### Pima indian diabete
+#
+#[Source.](https://gist.github.com/ktisha/c21e73a1bd1700294ef790c56c8aec1f)
+#
+#```{r, results="show", include=TRUE, echo=TRUE}
+#load("data/pimaData.rda")
+#for (i in 3:5)
+#{
+#  print(paste("Resultats en", i, "classes"))
+#  grlplot(x, i)
+#}
+#```
+#
+### Breast cancer
+#
+#[Source.](http://archive.ics.uci.edu/ml/datasets/breast+cancer+wisconsin+\%28diagnostic\%29)
+#
+#```{r, results="show", include=TRUE, echo=TRUE}
+#load("data/wdbc.rda")
+#for (i in 3:5)
+#{
+#  print(paste("Resultats en", i, "classes"))
+#  grlplot(x, i)
+#}
+#```
+#
+### House-votes
+#
+#```{r, results="show", include=TRUE, echo=TRUE}
+#load("data/house-votes.rda")
+#for (i in 3:5)
+#{
+#  print(paste("Resultats en", i, "classes"))
+#  grlplot(x, i)
+#}
+#```
