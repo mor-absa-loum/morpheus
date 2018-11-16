@@ -13,162 +13,23 @@ knitr::opts_chunk$set(echo = TRUE, include = TRUE,
   out.width = "100%", fig.align = "center")
 ```
 
-morpheus is a contributed R package which attempts to find the parameters of a mixture of logistic classifiers.
-Logistic models, or more generally multinomial regression models that fit covariates to discrete responses through a link function, are very popular.
-When  the  data  under  study  come  from  several  groups  that  have  di erent  characteristics,using mixture models is also a very popular way to handle heterogeneity.  Thus, many algo-rithms were developed to deal with various mixtures models, see for instance the book [5].Most of them use likelihood methods or Bayesian methods that are likelihood dependent.Indeed, the now well known expectation-maximization (EM) methodology or its randomizedversions makes it often easy to build algorithms.  However one problem of such methods isthat  they  can  converge  to  local  spurious  maxima  so  that  it  is  necessary  to  explore  manyenough initial points.  Recently, spectral methods were developed to bypass EM algorithmsand they were proved able to recover the directions of the regression parameter in modelswith known link function and random covariates, see [9].One aim of this paper is to extend such moment methods using least squares to get es-timators of the whole parameters, and to provide theoretical guarantees of this estimationmethod.  The setting is that of regression models with binary outputs,  random covariatesand known link function,  detailed in Section 2.  We  rst prove that cross moments up toorder 3 between the output and the regression variables are enough to recover all the pa-rameters of the model, see Theorem 1 for the probit link function and Theorem 2 for generallink functions.  We then obtain consistency and asymptotic normality of our least squaresestimators  as  usual,  see  Theorem  3.   The  algorithm  is  described  at  the  end  of  Section  3,1
-
-and to apply it,  we developed the R-packagemorpheusavailable on the CRAN ([3]).  Wethen compare experimentally our method to the maximum likelihood estimator computedusing the R-package  exmix ([6]).  We show that our estimator may be better for the probitlink function with  nite samples when the dimension increases, though keeping very smallcomputation  times  when  that  of   exmix  increases  with  dimension.   The  experiments  arepresented in Section 4
-
-
-
-
-
-
-
 0) Tell that we try to learn classification parameters in a non-EM way, using algebric manipulations.
+
+*morpheus* is a contributed R package which attempts to find the parameters of a mixture of logistic classifiers.
+When the data under study come from several groups that have different characteristics, using mixture models is a very popular way to handle heterogeneity.
+Thus, many algorithms were developed to deal with various mixtures models. Most of them use likelihood methods or Bayesian methods that are likelihood dependent.
+*flexmix* is an R package which implements these kinds of algorithms.
+
+However, one problem of such methods is that they can converge to local maxima, so several starting points must be explored.
+Recently, spectral methods were developed to bypass EM algorithms and they were proved able to recover the directions of the regression parameter
+in models with known link function and random covariates (see [9]).
+Our package extends such moment methods using least squares to get estimators of the whole parameters (with theoretical garantees, see [XX]).
+Currently it can handle only binary output $-$ which is a common case.
+
 1) Model.
+
+TODO: retrouver mon texte initial + article.
+
 2) Algorithm (as in article)
+
 3) Experiments: show package usage
-
-# Expériences
-
-```{r, results="show", include=TRUE, echo=TRUE}
-library(Rmixmod) #to get clustering probability matrix
-library(ClusVis)
-library(FactoMineR) #for PCA
-
-plotPCA <- function(prob)
-{
-  par(mfrow=c(2,2), mar=c(4,4,2,2), mgp=c(2,1,0))
-  partition <- apply(prob, 1, which.max)
-  n <- nrow(prob)
-  K <- ncol(prob)
-  palette <- rainbow(K, s=.5)
-  cols <- palette[partition]
-  tmp <- PCA(rbind(prob, diag(K)), ind.sup=(n+1):(n+K), scale.unit=F, graph=F)
-  scores <- tmp$ind$coord[,1:3] #samples coords, by rows
-  ctrs <- tmp$ind.sup$coord #projections of indicator vectors (by cols)
-  for (i in 1:2)
-  {
-    for (j in (i+1):3)
-    {
-      absc <- scores[,i]
-      ords <- scores[,j]
-      xrange <- range(absc)
-      yrange <- range(ords)
-      plot(absc, ords, col=c(cols,rep(colors()[215],K),rep(1,K)),
-        pch=c(rep("o",n),rep(as.character(1:K),2)),
-        xlim=xrange, ylim=yrange,
-        xlab=paste0("Dim ", i, " (", round(tmp$eig[i,2],2), "%)"),
-        ylab=paste0("Dim ", j, " (", round(tmp$eig[j,2],2), "%)"))
-      ctrsavg <- t(apply(as.matrix(palette), 1,
-        function(cl) c(mean(absc[cols==cl]), mean(ords[cols==cl]))))
-			text(ctrsavg[,1], ctrsavg[,2], as.character(1:K), col=colors()[215])
-			text(ctrs[,i], ctrs[,j], as.character(1:K), col=1)
-			title(paste0("PCA ", i, "-", j, " / K=",K))
-    }
-  }
-  # TODO:
-  plot(0, xaxt="n", yaxt="n", xlab="", ylab="", col="white", bty="n")
-}
-
-plotClvz <- function(xem, alt=FALSE)
-{
-  par(mfrow=c(2,2), mar=c(4,4,2,2), mgp=c(2,1,0))
-  if (alt) {
-    resvisu <- clusvis(log(xem@bestResult@proba), xem@bestResult@parameters@proportions)
-  } else {
-    resvisu <- clusvisMixmod(xem)
-  }
-  plotDensityClusVisu(resvisu, positionlegend=NULL)
-  plotDensityClusVisu(resvisu, add.obs=TRUE, positionlegend=NULL)
-  # TODO:
-  plot(0, xaxt="n", yaxt="n", xlab="", ylab="", col="white", bty="n")
-  plot(0, xaxt="n", yaxt="n", xlab="", ylab="", col="white", bty="n")
-}
-
-grlplot <- function(x, K, alt=FALSE) #x: data, K: nb classes
-{
-  xem <- mixmodCluster(x, K, strategy=mixmodStrategy(nbTryInInit=500,nbTry=25))
-  plotPCA(xem@results[[1]]@proba)
-  plotClvz(xem, alt)
-}
-```
-
-## Iris data
-
-```{r, results="show", include=TRUE, echo=TRUE}
-data(iris)
-x <- iris[,-5] #remove class info
-for (i in 3:5)
-{
-  print(paste("Resultats en", i, "classes"))
-  grlplot(x, i)
-}
-```
-
-### finance dataset (from Rmixmod package)
-#
-#This dataset has two categorical attributes (the year and financial status), and four continuous ones.
-#
-#Warnings, some probabilities of classification are exactly equal to zero then we cannot use ClusVis
-#
-#```{r, results="show", include=TRUE, echo=TRUE}
-#data(finance)
-#x <- finance[,-2]
-#for (i in 3:5)
-#{
-#  print(paste("Resultats en", i, "classes"))
-#  grlplot(x, i, TRUE)
-#}
-#```
-#
-### "Cathy dataset" (12 clusters)
-#
-#Warnings, some probabilities of classification are exactly equal to zero then we cannot use ClusVis
-#
-#```{r, results="hide", include=TRUE, echo=TRUE}
-#cathy12 <- as.matrix(read.table("data/probapostCatdbBlocAtrazine-K12.txt"))
-#resvisu <- clusvis(log(cathy12), prop = colMeans(cathy12))
-#par(mfrow=c(2,2), mar=c(4,4,2,2), mgp=c(2,1,0))
-#plotDensityClusVisu(resvisu, positionlegend = NULL)
-#plotDensityClusVisu(resvisu,  add.obs = TRUE, positionlegend = NULL)
-#plotPCA(cathy12)
-#```
-#
-### Pima indian diabete
-#
-#[Source.](https://gist.github.com/ktisha/c21e73a1bd1700294ef790c56c8aec1f)
-#
-#```{r, results="show", include=TRUE, echo=TRUE}
-#load("data/pimaData.rda")
-#for (i in 3:5)
-#{
-#  print(paste("Resultats en", i, "classes"))
-#  grlplot(x, i)
-#}
-#```
-#
-### Breast cancer
-#
-#[Source.](http://archive.ics.uci.edu/ml/datasets/breast+cancer+wisconsin+\%28diagnostic\%29)
-#
-#```{r, results="show", include=TRUE, echo=TRUE}
-#load("data/wdbc.rda")
-#for (i in 3:5)
-#{
-#  print(paste("Resultats en", i, "classes"))
-#  grlplot(x, i)
-#}
-#```
-#
-### House-votes
-#
-#```{r, results="show", include=TRUE, echo=TRUE}
-#load("data/house-votes.rda")
-#for (i in 3:5)
-#{
-#  print(paste("Resultats en", i, "classes"))
-#  grlplot(x, i)
-#}
-#```
