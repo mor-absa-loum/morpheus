@@ -13,6 +13,18 @@ knitr::opts_chunk$set(echo = TRUE, include = TRUE,
   out.width = "100%", fig.align = "center")
 ```
 
+morpheus is a contributed R package which attempts to find the parameters of a mixture of logistic classifiers.
+Logistic models, or more generally multinomial regression models that fit covariates to discrete responses through a link function, are very popular.
+When  the  data  under  study  come  from  several  groups  that  have  di erent  characteristics,using mixture models is also a very popular way to handle heterogeneity.  Thus, many algo-rithms were developed to deal with various mixtures models, see for instance the book [5].Most of them use likelihood methods or Bayesian methods that are likelihood dependent.Indeed, the now well known expectation-maximization (EM) methodology or its randomizedversions makes it often easy to build algorithms.  However one problem of such methods isthat  they  can  converge  to  local  spurious  maxima  so  that  it  is  necessary  to  explore  manyenough initial points.  Recently, spectral methods were developed to bypass EM algorithmsand they were proved able to recover the directions of the regression parameter in modelswith known link function and random covariates, see [9].One aim of this paper is to extend such moment methods using least squares to get es-timators of the whole parameters, and to provide theoretical guarantees of this estimationmethod.  The setting is that of regression models with binary outputs,  random covariatesand known link function,  detailed in Section 2.  We  rst prove that cross moments up toorder 3 between the output and the regression variables are enough to recover all the pa-rameters of the model, see Theorem 1 for the probit link function and Theorem 2 for generallink functions.  We then obtain consistency and asymptotic normality of our least squaresestimators  as  usual,  see  Theorem  3.   The  algorithm  is  described  at  the  end  of  Section  3,1
+
+and to apply it,  we developed the R-packagemorpheusavailable on the CRAN ([3]).  Wethen compare experimentally our method to the maximum likelihood estimator computedusing the R-package  exmix ([6]).  We show that our estimator may be better for the probitlink function with  nite samples when the dimension increases, though keeping very smallcomputation  times  when  that  of   exmix  increases  with  dimension.   The  experiments  arepresented in Section 4
+
+
+
+
+
+
+
 0) Tell that we try to learn classification parameters in a non-EM way, using algebric manipulations.
 1) Model.
 2) Algorithm (as in article)
