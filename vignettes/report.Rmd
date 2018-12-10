@@ -1,5 +1,5 @@
 ---
-title: morpheus...........
+title: Use morpheus package
 
 output:
   pdf_document:
@@ -13,7 +13,8 @@ knitr::opts_chunk$set(echo = TRUE, include = TRUE,
   out.width = "100%", fig.align = "center")
 ```
 
-0) Tell that we try to learn classification parameters in a non-EM way, using algebric manipulations.
+## Introduction
+<!--Tell that we try to learn classification parameters in a non-EM way, using algebric manipulations.-->
 
 *morpheus* is a contributed R package which attempts to find the parameters of a mixture of logistic classifiers.
 When the data under study come from several groups that have different characteristics, using mixture models is a very popular way to handle heterogeneity.
@@ -22,11 +23,13 @@ Thus, many algorithms were developed to deal with various mixtures models. Most 
 
 However, one problem of such methods is that they can converge to local maxima, so several starting points must be explored.
 Recently, spectral methods were developed to bypass EM algorithms and they were proved able to recover the directions of the regression parameter
-in models with known link function and random covariates (see [9]).
+in models with known link function and random covariates (see [XX]).
 Our package extends such moment methods using least squares to get estimators of the whole parameters (with theoretical garantees, see [XX]).
 Currently it can handle only binary output $-$ which is a common case.
 
-1) Model.
+## Model
+
+
 
 TODO: retrouver mon texte initial + article.
 
