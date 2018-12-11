@@ -16,54 +16,62 @@ knitr::opts_chunk$set(echo = TRUE, include = TRUE,
 ## Introduction
 <!--Tell that we try to learn classification parameters in a non-EM way, using algebric manipulations.-->
 
-*morpheus* is a contributed R package which attempts to find the parameters of a mixture of logistic classifiers.
-When the data under study come from several groups that have different characteristics, using mixture models is a very popular way to handle heterogeneity.
-Thus, many algorithms were developed to deal with various mixtures models. Most of them use likelihood methods or Bayesian methods that are likelihood dependent.
+*morpheus* is a contributed R package which attempts to find the parameters of a
+mixture of logistic classifiers.
+When the data under study come from several groups that have different characteristics,
+using mixture models is a very popular way to handle heterogeneity.
+Thus, many algorithms were developed to deal with various mixtures models.
+Most of them use likelihood methods or Bayesian methods that are likelihood dependent.
 *flexmix* is an R package which implements these kinds of algorithms.
 
-However, one problem of such methods is that they can converge to local maxima, so several starting points must be explored.
-Recently, spectral methods were developed to bypass EM algorithms and they were proved able to recover the directions of the regression parameter
+However, one problem of such methods is that they can converge to local maxima,
+so several starting points must be explored.
+Recently, spectral methods were developed to bypass EM algorithms and they were proved
+able to recover the directions of the regression parameter
 in models with known link function and random covariates (see [XX]).
-Our package extends such moment methods using least squares to get estimators of the whole parameters (with theoretical garantees, see [XX]).
+Our package extends such moment methods using least squares to get estimators of the
+whole parameters (with theoretical garantees, see [XX]).
 Currently it can handle only binary output $-$ which is a common case.
 
 ## Model
 
-TODO: adapt
+Let $X\in \R^{d}$ be the vector of covariates and $Y\in \{0,1\}$ be the binary output.
+A binary regression model assumes that for some link function $g$, the probability that
+$Y=1$ conditionally to $X=x$ is given by $g(\langle \beta, x \rangle +b)$, where
+$\beta\in \R^{d}$ is the vector of regression coefficients and $b\in\R$ is the intercept.
+Popular examples of link functions are the logit link function where for any real $z$,
+$g(z)=e^z/(1+e^z)$ and the probit link function where $g(z)=\Phi(z),$ with $\Phi$
+the cumulative distribution function of the standard normal ${\cal N}(0,1)$.
+Both are implemented in the package.
 
-Let us denote $[n]$ the set $\lbrace 1,2,\ldots,n\rbrace$ and $e_i\in\mathbb{R}^d,$ the i-th canonical basis vector of $\mathbb{R}^d.$ Denote also $I_d\in\mathbb{R}^{d\times d}$ the identity matrix in $\mathbb{R}^{d}$. The tensor product of $p$ euclidean spaces $\mathbb{R}^{d_i},\,\,i\in [p]$ is noted $\bigotimes_{i=1}^p\mathbb{R}^{d_i}.$ $T$ is called a real p-th order tensor if $T\in \bigotimes_{i=1}^p\mathbb{R}^{d_i}.$ For $p=1,$ $T$ is a vector in $\mathbb{R}^d$ and for $p=2$, $T$ is a $d\times d$ real matrix. The $(i_1,i_2,\ldots,i_p)$-th coordinate of $T$ with respect the canonical basis is denoted   $T[i_1,i_2,\ldots,i_p]$, $ i_1,i_2,\ldots,i_p\in [d].$\\
-
-\noindent
-Let $X\in \R^{d}$ be the vector of covariates and $Y\in \{0,1\}$ be the binary output. \\
-
-\noindent
-A binary regression model assumes that for some link function $g$, the probability that $Y=1$ conditionally to $X=x$ is given by $g(\langle \beta , x \rangle +b)$, where $\beta\in \R^{d}$ is the vector of regression coefficients and $b\in\R$ is the intercept. Popular examples of link functions are the logit link function where for any real $z$,  $g(z)=e^z/(1+e^z)$ and the probit link function where $g(z)=\Phi(z),$  with $\Phi$  the cumulative distribution function of the standard normal ${\cal N}(0,1)$. \\
-If now we want to modelise heterogeneous populations, let $K$ be the number of populations and $\omega=(\omega_1,\cdots,\omega_K)$ their weights such that $\omega_{j}\geq 0$, $j=1,\ldots,K$ and $\sum_{j=1}^{K}\omega{j}=1$. Define, for $j=1,\ldots,K$, the regression coefficients in the $j$-th population by $\beta_{j}\in\R^{d}$ and the intercept in the $j$-th population by $b_{j}\in\R$. Let $\omega =(\omega_{1},\ldots,\omega_{K})$,   $b=(b_1,\cdots,b_K)$, $\beta=[\beta_{1} \vert \cdots,\vert \beta_K]$ the $d\times K$ matrix of regression coefficients and denote $\theta=(\omega,\beta,b)$.
+If now we want to modelise heterogeneous populations, let $K$ be the number of
+populations and $\omega=(\omega_1,\cdots,\omega_K)$ their weights such that
+$\omega_{j}\geq 0$, $j=1,\ldots,K$ and $\sum_{j=1}^{K}\omega{j}=1$.
+Define, for $j=1,\ldots,K$, the regression coefficients in the $j$-th population
+by $\beta_{j}\in\R^{d}$ and the intercept in the $j$-th population by
+$b_{j}\in\R$. Let $\omega =(\omega_{1},\ldots,\omega_{K})$,
+$b=(b_1,\cdots,b_K)$, $\beta=[\beta_{1} \vert \cdots,\vert \beta_K]$ the $d\times K$
+matrix of regression coefficients and denote $\theta=(\omega,\beta,b)$.
 The model of population mixture of binary regressions is given by:
+
 \begin{equation}
 \label{mixturemodel1}
 \PP_{\theta}(Y=1\vert X=x)=\sum^{K}_{k=1}\omega_k g(<\beta_k,x>+b_k).
 \end{equation}
 
-\noindent
-We assume that the random variable $X$ has a Gaussian distribution. We now focus on the situation where $X\sim \mathcal{N}(0,I_d)$, $I_d$ being the identity $d\times d$ matrix. All results may be easily extended to the situation where $X\sim \mathcal{N}(m,\Sigma)$, $m\in \R^{d}$, $\Sigma$ a positive and symetric $d\times d$ matrix. \\
+## Algorithm, theoretical garantees
 
-\noindent
+The algorithm uses spectral properties of some tensor matrices to estimate the model
+parameters $\Theta = (\omega, \beta, b)$. Under rather mild conditions it can be
+proved that the algorithm converges to the correct values (its speed is known too).
+For more informations on that subject, however, please refer to our article [XX].
+In this vignette let's rather focus on package usage.
 
-2) Algorithm (as in article)
+## Usage
+<!--We assume that the random variable $X$ has a Gaussian distribution. We now focus on the situation where $X\sim \mathcal{N}(0,I_d)$, $I_d$ being the identity $d\times d$ matrix. All results may be easily extended to the situation where $X\sim \mathcal{N}(m,\Sigma)$, $m\in \R^{d}$, $\Sigma$ a positive and symetric $d\times d$ matrix. \\
+TODO: take this into account? -->
 
-TODO: find it...
 
-The developed R-package is called \verb"morpheus" \cite{Loum_Auder} and divided into two main parts:
-\begin{enumerate}
-	\item the computation of the directions matrix $\mu$, based on the empirical
-		cross-moments as described in the previous sections;
-	\item the optimization of all parameters (including $\mu$), using the initially estimated
-		directions as a starting point.
-\end{enumerate}
-The former is a straightforward translation of the mathematical formulas (file R/computeMu.R),
-while the latter calls R constrOptim() method on the objective function expression and its
-derivative (file R/optimParams.R). For usage examples, please refer to the package help.
 
 3) Experiments: show package usage
 
