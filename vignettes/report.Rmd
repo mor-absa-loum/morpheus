@@ -68,10 +68,13 @@ For more informations on that subject, however, please refer to our article [XX]
 In this vignette let's rather focus on package usage.
 
 ## Usage
-<!--We assume that the random variable $X$ has a Gaussian distribution. We now focus on the situation where $X\sim \mathcal{N}(0,I_d)$, $I_d$ being the identity $d\times d$ matrix. All results may be easily extended to the situation where $X\sim \mathcal{N}(m,\Sigma)$, $m\in \R^{d}$, $\Sigma$ a positive and symetric $d\times d$ matrix. \\
-TODO: take this into account? -->
+<!--We assume that the random variable $X$ has a Gaussian distribution.
+We now focus on the situation where $X\sim \mathcal{N}(0,I_d)$, $I_d$ being the
+identity $d\times d$ matrix. All results may be easily extended to the situation
+where $X\sim \mathcal{N}(m,\Sigma)$, $m\in \R^{d}$, $\Sigma$ a positive and
+symetric $d\times d$ matrix. ***** TODO: take this into account? -->
 
-
+TODO
 
 3) Experiments: show package usage
 
