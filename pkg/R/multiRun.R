@@ -57,8 +57,7 @@
 #'     library(morpheus)
 #'     K <- fargs$optargs$K
 #'     μ <- computeMu(fargs$X, fargs$Y, fargs$optargs)
-#'     V <- list( p=rep(1/K,K-1), β=μ, b=c(0,0) )
-#'     optimParams(V,fargs$optargs)$β
+#'     optimParams(fargs$K,fargs$link,fargs$optargs)$run(list(β=μ))$β
 #'   },
 #'   # flexmix
 #'   function(fargs) {
@@ -74,7 +73,8 @@
 #'     io = generateSampleIO(fargs$n, fargs$p, fargs$β, fargs$b, fargs$optargs$link)
 #'     fargs$X = io$X
 #'     fargs$Y = io$Y
-#'     fargs$optargs$K = ncol(fargs$β)
+#'     fargs$K = ncol(fargs$β)
+#'     fargs$link = fargs$optargs$link
 #'     fargs$optargs$M = computeMoments(io$X,io$Y)
 #'     fargs
 #'   }, N=10, ncores=3)

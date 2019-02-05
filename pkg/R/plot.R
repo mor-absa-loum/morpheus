@@ -48,14 +48,14 @@ plotHist <- function(mr, x, y)
 #' @examples
 #' #See example in ?plotHist
 #' @export
-plotBox <- function(mr, x, y)
+plotBox <- function(mr, x, y, xtitle="")
 {
 	params <- extractParam(mr, x, y)
 	L = length(params)
 	# Plot boxplots side by side
 	par(mfrow=c(1,L), cex.axis=1.5, cex.lab=1.5, mar=c(4.7,5,1,1))
 	for (i in 1:L)
-		boxplot(params[[i]], ylab="Parameter value")
+		boxplot(params[[i]], xlab=xtitle, ylab="Parameter value")
 }
 
 #' plotCoefs

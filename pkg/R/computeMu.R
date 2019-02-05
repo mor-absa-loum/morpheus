@@ -12,7 +12,7 @@
 #'     \item 'jd_nvects', number of random vectors for joint-diagonalization
 #'       (or 0 for p=d, canonical basis by default)
 #'     \item 'M', moments of order 1,2,3: will be computed if not provided.
-#'     \item 'K', number of populations (estimated with ranks of M2 if not given)
+#'     \item 'K', number of populations (estimated with rank of M2 if not given)
 #'   }
 #'
 #' @return The estimated normalized parameters as columns of a matrix μ of size dxK

@@ -213,13 +213,23 @@ setRefClass(
 		{
 			"Run optimization from x0 with solver..."
 
-			if (!is.numeric(x0) || any(is.na(x0)) || length(x0) != (d+2)*K-1
-				|| any(x0[1:(K-1)] < 0) || sum(x0[1:(K-1)]) > 1)
-			{
-				stop("x0: numeric vector, no NA, length (d+2)*K-1, sum(x0[1:(K-1) >= 0]) <= 1")
-			}
+	    if (!is.list(x0))
+		    stop("x0: list")
+      if (is.null(x0$β))
+        stop("At least x0$β must be provided")
+			if (!is.matrix(x0$β) || any(is.na(x0$β)) || ncol(x0$β) != K)
+				stop("x0$β: matrix, no NA, ncol == K")
+      if (is.null(x0$p))
+        x0$p = rep(1/K, K-1)
+      else if (length(x0$p) != K-1 || sum(x0$p) > 1)
+        stop("x0$p should contain positive integers and sum to < 1")
+      # Next test = heuristic to detect missing b (when matrix is called "beta")
+      if (is.null(x0$b) || all(x0$b == x0$β))
+        x0$b = rep(0, K)
+      else if (any(is.na(x0$b)))
+        stop("x0$b cannot have missing values")
 
-			op_res = constrOptim( x0, .self$f, .self$grad_f,
+			op_res = constrOptim( linArgs(x0), .self$f, .self$grad_f,
 				ui=cbind(
 					rbind( rep(-1,K-1), diag(K-1) ),
 					matrix(0, nrow=K, ncol=(d+1)*K) ),

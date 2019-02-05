@@ -89,24 +89,143 @@ X and Y which contain vector inputs and binary output.
 However, a function is provided in the package to generate such data following a
 pre-defined law:
 
+```{r, results="show", include=TRUE, echo=TRUE}
+library(morpheus)
 io <- generateSampleIO(n=10000, p=1/2, beta=matrix(c(1,0,0,1),ncol=2), b=c(0,0), link="probit")
+# io$X and io$Y contain the sample data
+```
 
-n is the total number of samples (lines in X, number of elements in Y)
-p is a vector of proportions, of size d-1 (because the last proportion is deduced from
-  the others: p elements sums to 1) [TODO: omega or p?]
-beta is the matrix of linear coefficients, as written above in the model.
-b is the vector of intercepts (as in linear regression, and as in the model above)
+$n$ is the total number of samples (lines in X, number of elements in Y)
+$p$ is a vector of proportions, of size $d-1$ (because the last proportion is deduced
+from the others: $p$ elements sums to 1) [TODO: omega or p?]
+$\beta$ is the matrix of linear coefficients, as written above in the model.
+$b$ is the vector of intercepts (as in linear regression, and as in the model above)
 link can be either "logit" or "probit", as mentioned earlier.
 
 This function outputs a list containing in particular the matrices X and Y, allowing to
 use the other functions (which all require either these, or the moments).
 
-TODO: computeMu(), explain input/output
+```{r, results="show", include=TRUE, echo=TRUE}
+mu <- computeMu(io$X, io$Y, optargs=list(K=2))
+```
 
-### Estimation of other parameters
+The optional argument, "optargs", is a list which can provide
+ * the number of clusters $K$,
+ * the moments matrix $M$ (computed with the "computeMoments()" function),
+ * the joint-diagonalisation method ("uwedge" or "jedi"),
+ * the number of random vectors for joint-diagonalization.
+See ?computeMu and the code for more details.
 
-TODO: just run optimParams$run(...)
+### Estimation of the other parameters
+
+The other parameters are estimated by solving an optimization problem.
+The following function builds and return an optimization algorithm object:
+
+```{r, results="show", include=TRUE, echo=TRUE}
+M <- computeMoments(io$X, io$Y)
+# X and Y must be provided if the moments matrix is not given
+algopt <- optimParams(K=2, link="probit", optargs=list(M=M))
+# Optimization starts at beta = mu, b = 0 and p = uniform distribution
+x0 <- list(beta = mu)
+theta <- algopt$run(x0)
+```
+
+Now theta is a list with three slots:
+ * $p$: estimated proportions,
+ * $\beta$: estimated regression matrix,
+ * $b$: estimated bias.
 
 ### Monte-Carlo and bootstrap
 
-TODO: show example comparison with flexmix, show plots.
+The package provides a function to compare methods on several computations on random data.
+It takes in input a list of parameters, then a list of functions which output some quantities
+(on the first example, our "computeMu()" method versus flexmix way of estimating directions),
+and finally a method to prepare the arguments which will be given to the functions in the
+list just mentioned; this allows to run Monte-Carlo estimations with the exact same samples
+for each compared method. The two last arguments to "multiRun()" control the number of runs,
+and the number of cores (using the package parallel).
+
+```{r, results="show", include=TRUE, echo=TRUE}
+beta <- matrix(c(1,-2,3,1), ncol=2)
+io <- generateSampleIO(n=1000, p=1/2, beta=beta, b=c(0,0), "logit")
+mu <- normalize(beta)
+
+# Example 1: bootstrap + computeMu, morpheus VS flexmix; assumes fargs first 3 elts X,Y,K
+mr1 <- multiRun(list(X=io$X,Y=io$Y,optargs=list(K=2,jd_nvects=0)), list(
+  # morpheus
+  function(fargs) {
+    library(morpheus)
+    ind <- fargs$ind
+    computeMu(fargs$X[ind,],fargs$Y[ind],fargs$optargs)
+  },
+  # flexmix
+  function(fargs) {
+    library(flexmix)
+    source("../patch_Bettina/FLXMRglm.R")
+    ind <- fargs$ind
+    K <- fargs$optargs$K
+    dat = as.data.frame( cbind(fargs$Y[ind],fargs$X[ind,]) )
+    out = refit( flexmix( cbind(V1, 1 - V1) ~ 0+., data=dat, k=K,
+      model=FLXMRglm(family="binomial") ) )
+    normalize( matrix(out@coef[1:(ncol(fargs$X)*K)], ncol=K) )
+  } ),
+  prepareArgs = function(fargs,index) {
+    # Always include the non-shuffled dataset
+    if (index == 1)
+      fargs$ind <- 1:nrow(fargs$X)
+    else
+      fargs$ind <- sample(1:nrow(fargs$X),replace=TRUE)
+    fargs
+  }, N=10, ncores=3)
+# The result is correct up to matrices columns permutations; align them:
+for (i in 1:2)
+  mr1[[i]] <- alignMatrices(mr1[[i]], ref=mu, ls_mode="exact")
+```
+
+Several plots are available: histograms, boxplots, or curves of coefficients.
+We illustrate boxplots and curves here (histograms function uses the same arguments,
+see ?plotHist).
+
+```
+# Second row, first column; morpheus on the left, flexmix on the right
+plotBox(mr1, 2, 1, "Target value: -1")
+```
+
+```{r, results="show", include=TRUE, echo=TRUE}
+# Example 2: Monte-Carlo + optimParams from X,Y, morpheus VS flexmix; first args n,p,beta,b
+mr2 <- multiRun(list(n=1000,p=1/2,beta=beta,b=c(0,0),optargs=list(link="logit")), list(
+  # morpheus
+  function(fargs) {
+    library(morpheus)
+    mu <- computeMu(fargs$X, fargs$Y, fargs$optargs)
+    optimParams(fargs$K,fargs$link,fargs$optargs)$run(list(beta=mu))$beta
+  },
+  # flexmix
+  function(fargs) {
+    library(flexmix)
+    source("../patch_Bettina/FLXMRglm.R")
+    dat <- as.data.frame( cbind(fargs$Y,fargs$X) )
+    out <- refit( flexmix( cbind(V1, 1 - V1) ~ 0+., data=dat, k=fargs$K,
+      model=FLXMRglm(family="binomial") ) )
+    sapply( seq_len(fargs$K), function(i) as.double( out@components[[1]][[i]][,1] ) )
+  } ),
+  prepareArgs = function(fargs,index) {
+    library(morpheus)
+    io = generateSampleIO(fargs$n, fargs$p, fargs$beta, fargs$b, fargs$optargs$link)
+    fargs$X = io$X
+    fargs$Y = io$Y
+    fargs$K = ncol(fargs$beta)
+    fargs$link = fargs$optargs$link
+    fargs$optargs$M = computeMoments(io$X,io$Y)
+    fargs
+  }, N=10, ncores=3)
+# As in example 1, align results:
+for (i in 1:2)
+  mr2[[i]] <- alignMatrices(mr2[[i]], ref=beta, ls_mode="exact")
+```
+
+```
+# Second argument = true parameters matrix; third arg = index of method (here "morpheus")
+plotCoefs(mr2, beta, 1)
+# Real params are on the continous line; estimations = dotted line
+```
