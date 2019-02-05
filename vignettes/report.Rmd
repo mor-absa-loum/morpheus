@@ -7,6 +7,9 @@ output:
     toc_depth: 1
 ---
 
+\renewcommand{\P}{\mathrm{P}}
+\newcommand{\R}{\mathbb{R}}
+
 ```{r setup,  results="hide", include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, include = TRUE,
   cache = TRUE, comment="", cache.lazy = FALSE,
@@ -56,7 +59,7 @@ The model of population mixture of binary regressions is given by:
 
 \begin{equation}
 \label{mixturemodel1}
-\PP_{\theta}(Y=1\vert X=x)=\sum^{K}_{k=1}\omega_k g(<\beta_k,x>+b_k).
+\P_{\theta}(Y=1\vert X=x)=\sum^{K}_{k=1}\omega_k g(<\beta_k,x>+b_k).
 \end{equation}
 
 ## Algorithm, theoretical garantees
@@ -110,10 +113,12 @@ mu <- computeMu(io$X, io$Y, optargs=list(K=2))
 ```
 
 The optional argument, "optargs", is a list which can provide
+
  * the number of clusters $K$,
  * the moments matrix $M$ (computed with the "computeMoments()" function),
  * the joint-diagonalisation method ("uwedge" or "jedi"),
  * the number of random vectors for joint-diagonalization.
+
 See ?computeMu and the code for more details.
 
 ### Estimation of the other parameters
@@ -131,6 +136,7 @@ theta <- algopt$run(x0)
 ```
 
 Now theta is a list with three slots:
+
  * $p$: estimated proportions,
  * $\beta$: estimated regression matrix,
  * $b$: estimated bias.
@@ -186,7 +192,7 @@ Several plots are available: histograms, boxplots, or curves of coefficients.
 We illustrate boxplots and curves here (histograms function uses the same arguments,
 see ?plotHist).
 
-```
+```{r, results="show", include=TRUE, echo=TRUE}
 # Second row, first column; morpheus on the left, flexmix on the right
 plotBox(mr1, 2, 1, "Target value: -1")
 ```
@@ -224,7 +230,7 @@ for (i in 1:2)
   mr2[[i]] <- alignMatrices(mr2[[i]], ref=beta, ls_mode="exact")
 ```
 
-```
+```{r, results="show", include=TRUE, echo=TRUE}
 # Second argument = true parameters matrix; third arg = index of method (here "morpheus")
 plotCoefs(mr2, beta, 1)
 # Real params are on the continous line; estimations = dotted line
