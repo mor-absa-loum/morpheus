@@ -2,7 +2,7 @@ optimBeta <- function(N, n, K, p, beta, b, link, ncores)
 {
 	library(morpheus)
 	res <- multiRun(
-		list(n=n,p=p,beta=beta,b=b,optargs=list(K=K,link=link)),
+		list(n=n, p=p, beta=beta, b=b, optargs=list(K=K, link=link)),
 		list(
 			# morpheus
 			function(fargs) {
@@ -11,25 +11,39 @@ optimBeta <- function(N, n, K, p, beta, b, link, ncores)
 				M <- computeMoments(fargs$X, fargs$Y)
 				fargs$optargs$M <- M
 				mu <- computeMu(fargs$X, fargs$Y, fargs$optargs)
-				op <- optimParams(K,link,fargs$optargs)
-				x_init <- list(p=rep(1/K,K-1), beta=mu, b=rep(0,K))
-				do.call(rbind, op$run(x_init))
-			},
-			# flexmix
-			function(fargs) {
-				library(flexmix)
-				source("../patch_Bettina/FLXMRglm.R")
-				K <- fargs$optargs$K
-				dat <- as.data.frame( cbind(fargs$Y,fargs$X) )
-				fm <- flexmix( cbind(V1, 1-V1) ~ .-V1, data=dat, k=K,
-					model = FLXMRglm(family = binomial(link = link)) )
-				p <- mean(fm@posterior[["scaled"]][,1])
-				out <- refit(fm)
-				beta_b <- sapply( seq_len(K), function(i) {
-					as.double( out@components[[1]][[i]][,1] )
-				} )
-				rbind(p, beta_b[2:nrow(beta_b),], beta_b[1,])
-			} ),
+				res2 <- NULL
+				tryCatch({
+					op <- optimParams(K,link,fargs$optargs)
+					x_init <- list(p=rep(1/K,K-1), beta=mu, b=rep(0,K))
+					res2 <- do.call(rbind, op$run(x_init))
+				}, error = function(e) {
+					res2 <- NA
+				})
+				res2
+			}
+#			,
+#			# flexmix
+#			function(fargs) {
+#				library(flexmix)
+#				source("../patch_Bettina/FLXMRglm.R")
+#				K <- fargs$optargs$K
+#				dat <- as.data.frame( cbind(fargs$Y,fargs$X) )
+#				res2 <- NULL
+#				tryCatch({
+#					fm <- flexmix( cbind(V1, 1-V1) ~ .-V1, data=dat, k=K,
+#						model = FLXMRglm(family = binomial(link = link)) )
+#					p <- mean(fm@posterior[["scaled"]][,1])
+#					out <- refit(fm)
+#					beta_b <- sapply( seq_len(K), function(i) {
+#						as.double( out@components[[1]][[i]][,1] )
+#					} )
+#					res2 <- rbind(p, beta_b[2:nrow(beta_b),], beta_b[1,])
+#				}, error = function(e) {
+#					res2 <- NA
+#				})
+#				res2
+#			}
+		),
 		prepareArgs = function(fargs, index) {
 			library(morpheus)
 			io = generateSampleIO(fargs$n, fargs$p, fargs$beta, fargs$b, fargs$optargs$link)
@@ -40,8 +54,14 @@ optimBeta <- function(N, n, K, p, beta, b, link, ncores)
 			fargs
 		}, N=N, ncores=ncores, verbose=TRUE)
 	p <- c(p, 1-sum(p))
-	for (i in 1:2)
+	for (i in 1:length(res)) {
+		for (j in N:1) {
+			if (is.null(res[[i]][[j]]) || is.na(res[[i]][[j]]))
+				res[[i]][[j]] <- NULL
+		}
+		print(paste("Count valid runs for ",i," = ",length(res[[i]]),sep=""))
 		res[[i]] <- alignMatrices(res[[i]], ref=rbind(p,beta,b), ls_mode="exact")
+	}
 	res
 }
 
@@ -97,4 +117,4 @@ mr <- optimBeta(N, n, K, p, beta, b, link, ncores)
 mr_params <- list("N"=N, "n"=n, "K"=K, "d"=d, "link"=link,
 	"p"=c(p,1-sum(p)), "beta"=beta, "b"=b)
 
-save("mr", "mr_params", file=paste("multirun_",d,"_",link,".RData",sep=""))
+save("mr", "mr_params", file=paste("multirun_",n,"_",d,"_",link,".RData",sep=""))
