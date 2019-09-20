@@ -11,7 +11,9 @@ NAMESPACE
 /pkg-cran/
 
 # Ignore various reports
-/reports/
+/reports/*
+!/reports/*.R
+!/reports/*.sh
 /vignettes/report.html
 /vignettes/report_cache/
 /vignettes/report_files/
