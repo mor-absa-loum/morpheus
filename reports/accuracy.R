@@ -1,8 +1,8 @@
-optimBeta <- function(N, n, K, p, beta, b, link, ncores)
+optimBeta <- function(N, n, K, p, beta, b, link, weights, ncores)
 {
 	library(morpheus)
 	res <- multiRun(
-		list(n=n, p=p, beta=beta, b=b, optargs=list(K=K, link=link)),
+		list(n=n, p=p, beta=beta, b=b, optargs=list(K=K, link=link, weights=weights)),
 		list(
 			# morpheus
 			function(fargs) {
@@ -71,6 +71,7 @@ N <- 10
 d <- 2
 n <- 1e4
 ncores <- 1
+weights <- c(1,1,1)
 
 cmd_args <- commandArgs()
 for (arg in cmd_args)
@@ -87,6 +88,8 @@ for (arg in cmd_args)
 			d <- as.integer(spl[2])
 		} else if (spl[1] == "link") {
 			link <- spl[2]
+		} else if (spl[1] == "weights") {
+		  weights <- unlist(strsplit(spl[2], ","))
 		}
 	}
 }
@@ -113,8 +116,8 @@ if (d == 2) {
 	beta <- matrix( c(1,2,-1,0,3,4,-1,-3,0,2,2,-3,0,1,0,-1,-4,3,2,0, -1,1,3,-1,0,0,2,0,1,-2,1,2,-1,0,3,4,-1,-3,0,2, 2,-3,0,1,0,-1,-4,3,2,0,1,1,2,2,-2,-2,3,1,0,0), ncol=K )
 }
 
-mr <- optimBeta(N, n, K, p, beta, b, link, ncores)
+mr <- optimBeta(N, n, K, p, beta, b, link, weights, ncores)
 mr_params <- list("N"=N, "n"=n, "K"=K, "d"=d, "link"=link,
-	"p"=c(p,1-sum(p)), "beta"=beta, "b"=b)
+	"p"=c(p,1-sum(p)), "beta"=beta, "b"=b, "weights"=weights)
 
 save("mr", "mr_params", file=paste("multirun_",n,"_",d,"_",link,".RData",sep=""))
