@@ -90,8 +90,7 @@ int hungarian_init(hungarian_problem_t* p, double** cost_matrix, int rows, int c
 		// nothing to do
 	}
 //	else
-//		fprintf(stderr,"%s: unknown mode. Mode was set to \
-//			HUNGARIAN_MODE_MINIMIZE_COST !\n", __FUNCTION__);
+//		fprintf(stderr,"%s: unknown mode. Mode was set to HUNGARIAN_MODE_MINIMIZE_COST !\n", __FUNCTION__);
 
 	return rows;
 }
@@ -370,8 +369,7 @@ double** array_to_matrix(double* m, int rows, int cols)
 }
 
 //TODO: re-code this algorithm in a more readable way, based on
-//https://www.topcoder.com/community/data-science/data-science-tutorials/\
-//  assignment-problem-and-hungarian-algorithm/
+//https://www.topcoder.com/community/data-science/data-science-tutorials/assignment-problem-and-hungarian-algorithm/
 // Get the optimal assignment, by calling hungarian_solve above; "distances" in columns
 void hungarianAlgorithm(double* distances, int* pn, int* assignment)
 {

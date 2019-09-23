@@ -23,8 +23,7 @@ Suggests:
     parallel,
     testthat,
     roxygen2,
-    tensor,
-    nloptr
+    tensor
 License: MIT + file LICENSE
 RoxygenNote: 5.0.1
 Collate:

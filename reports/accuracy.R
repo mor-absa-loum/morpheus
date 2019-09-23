@@ -13,7 +13,7 @@ optimBeta <- function(N, n, K, p, beta, b, link, ncores)
 				mu <- computeMu(fargs$X, fargs$Y, fargs$optargs)
 				res2 <- NULL
 				tryCatch({
-					op <- optimParams(K,link,fargs$optargs)
+					op <- optimParams(K,fargs$optargs$link,fargs$optargs)
 					x_init <- list(p=rep(1/K,K-1), beta=mu, b=rep(0,K))
 					res2 <- do.call(rbind, op$run(x_init))
 				}, error = function(e) {
