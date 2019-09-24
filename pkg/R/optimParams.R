@@ -86,6 +86,7 @@ setRefClass(
 		M1 = "numeric", #order-1 moment (vector size d)
 		M2 = "numeric", #M2 easier to process as a vector
 		M3 = "numeric", #M3 easier to process as a vector
+		weights = "numeric", #weights on moments
 		# Dimensions
 		K = "integer",
 		d = "integer"

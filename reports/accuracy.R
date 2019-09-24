@@ -71,6 +71,7 @@ N <- 10
 d <- 2
 n <- 1e4
 ncores <- 1
+strw <- "1-1-1"
 weights <- c(1,1,1)
 
 cmd_args <- commandArgs()
@@ -89,7 +90,8 @@ for (arg in cmd_args)
 		} else if (spl[1] == "link") {
 			link <- spl[2]
 		} else if (spl[1] == "weights") {
-		  weights <- unlist(strsplit(spl[2], ","))
+			strw <- spl[2]
+		  weights <- as.numeric(unlist(strsplit(spl[2], ",")))
 		}
 	}
 }
@@ -120,4 +122,4 @@ mr <- optimBeta(N, n, K, p, beta, b, link, weights, ncores)
 mr_params <- list("N"=N, "n"=n, "K"=K, "d"=d, "link"=link,
 	"p"=c(p,1-sum(p)), "beta"=beta, "b"=b, "weights"=weights)
 
-save("mr", "mr_params", file=paste("multirun_",n,"_",d,"_",link,".RData",sep=""))
+save("mr", "mr_params", file=paste("res_",n,"_",d,"_",link,"_",strw,".RData",sep=""))
