@@ -1,12 +1,76 @@
 library(morpheus)
 
+testMultistart <- function(N, n, K, p, beta, b, link, nstart, ncores)
+{
+  ms <- multiRun(
+    list(n=n,p=p,beta=beta,b=b,optargs=list(K=K,link=link,nstart=nstart)),
+    list(
+      function(fargs) {
+        # 1 start
+        library(morpheus)
+        K <- fargs$optargs$K
+        op <- optimParams(K, fargs$optargs$link, fargs$optargs)
+        x_init <- list(p=rep(1/K,K-1), beta=fargs$mu, b=rep(0,K))
+				res <- NULL
+				tryCatch({
+          res <- do.call(rbind, op$run(x_init))
+				}, error = function(e) {
+					res <- NA
+				})
+				res
+      },
+      function(fargs) {
+        # B starts
+        library(morpheus)
+        K <- fargs$optargs$K
+        op <- optimParams(K, fargs$optargs$link, fargs$optargs)
+        best_val <- Inf
+        best_par <- list()
+        for (i in 1:fargs$optargs$nstart)
+        {
+          #x_init <- list(p=rep(1/K,K-1), beta=i*fargs$mu, b=rep(0,K))
+          M <- matrix(rnorm(d*K), nrow=d, ncol=K)
+          M <- t(t(M) / sqrt(colSums(M^2)))
+          x_init <- list(p=rep(1/K,K-1), beta=M, b=rep(0,K))
+          tryCatch({
+            par <- op$run(x_init)
+          }, error = function(e) {
+            par <- NA
+          })
+          if (!is.na(par[0]))
+          {
+            val <- op$f( op$linArgs(par) )
+            if (val < best_val)
+            {
+              best_par <- par
+              best_val <- val
+            }
+          }
+        }
+        # Bet that at least one run succeded:
+        do.call(rbind,best_par)
+      }
+    ),
+    prepareArgs = function(fargs, index) {
+      library(morpheus)
+      io = generateSampleIO(fargs$n, fargs$p, fargs$beta, fargs$b, fargs$optargs$link)
+      fargs$optargs$M <- computeMoments(io$X, io$Y)
+      mu <- computeMu(io$X, io$Y, fargs$optargs)
+      fargs$mu <- mu
+      fargs
+    }, N=N, ncores=ncores, verbose=TRUE)
+  for (i in 1:2)
+    ms[[i]] <- alignMatrices(ms[[i]], ref=rbind(p,beta,b), ls_mode="exact")
+  ms
+}
+
 #model = binomial
 K <- 2
 p <- .5
 b <- c(-.2, .5)
 # Default values:
 link = "logit"
-N <- 100
+N <- 10
 d <- 2
 n <- 1e4
 ncores <- 1
@@ -39,47 +103,8 @@ betas <- list(
 	matrix( c(1,2,-1,0,3,4,-1,-3,0,2, 2,-3,0,1,0,-1,-4,3,2,0), ncol=K ) ) #d=10
 beta <- betas[[ ifelse( d==2, 1, ifelse(d==5,2,3) ) ]]
 
-ms <- multiRun(
-	list(n=n,p=p,beta=beta,b=b,optargs=list(K=K,link=link,nstart=nstart)), list(
-		function(fargs) {
-			# 1 start
-			library(morpheus)
-			K <- fargs$optargs$K
-			op <- optimParams(K, fargs$optargs$link, fargs$optargs)
-			x_init <- list(p=rep(1/K,K-1), beta=fargs$mu, b=rep(0,K))
-			do.call(rbind,op$run(x_init))
-		},
-		function(fargs) {
-			# B starts
-			library(morpheus)
-			K <- fargs$optargs$K
-			op <- optimParams(K, fargs$optargs$link, fargs$optargs)
-			best_val <- Inf
-			best_par <- list()
-			for (i in 1:fargs$optargs$nstart)
-			{
-				x_init <- list(p=rep(1/K,K-1), beta=i*fargs$mu, b=rep(0,K))
-				par <- op$run(x_init)
-				val <- op$f( op$linArgs(par) )
-				if (val < best_val)
-				{
-					best_par <- par
-					best_val <- val
-				}
-			}
-			do.call(rbind,best_par)
-		}),
-		prepareArgs = function(fargs) {
-			library(morpheus)
-			io = generateSampleIO(fargs$n, fargs$p, fargs$beta, fargs$b, fargs$optargs$link)
-			fargs$optargs$M <- computeMoments(io$X, io$Y)
-			mu <- computeMu(io$X, io$Y, fargs$optargs)
-			fargs$mu <- mu
-		}, N=N, ncores=ncores, verbose=TRUE)
-for (i in 1:2)
-	ms[[i]] <- alignMatrices(ms[[i]], ref=rbind(p,beta,b), ls_mode="exact")
+ms <- testMultistart(N, n, K, p, beta, b, link, nstart, ncores)
+ms_params <- list("N"=N, "nc"=ncores, "n"=n, "K"=K, "d"=d, "link"=link,
+	"p"=c(p,1-sum(p)), "beta"=beta, "b"=b, "nstart"=nstart)
 
-ms_params <- list("N"=N, "nc"=ncores, "n"=n, "K"=K, "link"=link,
-	"p"=p, "beta"=beta, "b"=b, "nstart"=nstart)
-
-save(ms, ms_params, file="multistart.RData")
+save("ms", "ms_params", file="multistart.RData")

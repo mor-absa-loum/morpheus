@@ -11,11 +11,10 @@ optimBeta <- function(N, n, K, p, beta, b, link, weights, ncores)
 				M <- computeMoments(fargs$X, fargs$Y)
 				fargs$optargs$M <- M
 				mu <- computeMu(fargs$X, fargs$Y, fargs$optargs)
-				res2 <- NULL
+        op <- optimParams(K,fargs$optargs$link,fargs$optargs)
+        x_init <- list(p=rep(1/K,K-1), beta=mu, b=rep(0,K))
 				tryCatch({
-					op <- optimParams(K,fargs$optargs$link,fargs$optargs)
-					x_init <- list(p=rep(1/K,K-1), beta=mu, b=rep(0,K))
-					res2 <- do.call(rbind, op$run(x_init))
+          res2 <- do.call(rbind, op$run(x_init))
 				}, error = function(e) {
 					res2 <- NA
 				})
@@ -50,7 +49,6 @@ optimBeta <- function(N, n, K, p, beta, b, link, weights, ncores)
 			fargs$X = io$X
 			fargs$Y = io$Y
 			fargs$optargs$K = ncol(fargs$beta)
-			fargs$optargs$M = computeMoments(io$X,io$Y)
 			fargs
 		}, N=N, ncores=ncores, verbose=TRUE)
 	p <- c(p, 1-sum(p))
@@ -119,7 +117,7 @@ if (d == 2) {
 }
 
 mr <- optimBeta(N, n, K, p, beta, b, link, weights, ncores)
-mr_params <- list("N"=N, "n"=n, "K"=K, "d"=d, "link"=link,
+mr_params <- list("N"=N, "nc"=ncores, "n"=n, "K"=K, "d"=d, "link"=link,
 	"p"=c(p,1-sum(p)), "beta"=beta, "b"=b, "weights"=weights)
 
 save("mr", "mr_params", file=paste("res_",n,"_",d,"_",link,"_",strw,".RData",sep=""))

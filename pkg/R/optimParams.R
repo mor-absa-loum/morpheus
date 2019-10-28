@@ -59,7 +59,7 @@ optimParams = function(K, link=c("logit","probit"), optargs=list())
 
   weights <- optargs$weights
   if (is.null(weights))
-    weights <- rep(1, K)
+    weights <- rep(1, 3)
 
 	# Build and return optimization algorithm object
 	methods::new("OptimParams", "li"=link, "M1"=as.double(M[[1]]),
