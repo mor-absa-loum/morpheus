@@ -1,9 +1,9 @@
 library(morpheus)
 
-testMultistart <- function(N, n, K, p, beta, b, link, nstart, ncores)
+testMultistart <- function(N, n, d, K, p, beta, b, link, nstart, ncores)
 {
   ms <- multiRun(
-    list(n=n,p=p,beta=beta,b=b,optargs=list(K=K,link=link,nstart=nstart)),
+    list(n=n,p=p,beta=beta,b=b,optargs=list(K=K,d=d,link=link,nstart=nstart)),
     list(
       function(fargs) {
         # 1 start
@@ -14,15 +14,14 @@ testMultistart <- function(N, n, K, p, beta, b, link, nstart, ncores)
 				res <- NULL
 				tryCatch({
           res <- do.call(rbind, op$run(x_init))
-				}, error = function(e) {
-					res <- NA
-				})
+				}, error = function(e) {})
 				res
       },
       function(fargs) {
         # B starts
         library(morpheus)
         K <- fargs$optargs$K
+				d <- fargs$optargs$d
         op <- optimParams(K, fargs$optargs$link, fargs$optargs)
         best_val <- Inf
         best_par <- list()
@@ -32,12 +31,11 @@ testMultistart <- function(N, n, K, p, beta, b, link, nstart, ncores)
           M <- matrix(rnorm(d*K), nrow=d, ncol=K)
           M <- t(t(M) / sqrt(colSums(M^2)))
           x_init <- list(p=rep(1/K,K-1), beta=M, b=rep(0,K))
-          tryCatch({
+          par <- NULL
+					tryCatch({
             par <- op$run(x_init)
-          }, error = function(e) {
-            par <- NA
-          })
-          if (!is.na(par[0]))
+          }, error = function(e) {})
+          if (!is.null(par))
           {
             val <- op$f( op$linArgs(par) )
             if (val < best_val)
@@ -57,7 +55,7 @@ testMultistart <- function(N, n, K, p, beta, b, link, nstart, ncores)
       fargs$optargs$M <- computeMoments(io$X, io$Y)
       mu <- computeMu(io$X, io$Y, fargs$optargs)
       fargs$mu <- mu
-      fargs
+			fargs
     }, N=N, ncores=ncores, verbose=TRUE)
   for (i in 1:2)
     ms[[i]] <- alignMatrices(ms[[i]], ref=rbind(p,beta,b), ls_mode="exact")
@@ -103,7 +101,7 @@ betas <- list(
 	matrix( c(1,2,-1,0,3,4,-1,-3,0,2, 2,-3,0,1,0,-1,-4,3,2,0), ncol=K ) ) #d=10
 beta <- betas[[ ifelse( d==2, 1, ifelse(d==5,2,3) ) ]]
 
-ms <- testMultistart(N, n, K, p, beta, b, link, nstart, ncores)
+ms <- testMultistart(N, n, d, K, p, beta, b, link, nstart, ncores)
 ms_params <- list("N"=N, "nc"=ncores, "n"=n, "K"=K, "d"=d, "link"=link,
 	"p"=c(p,1-sum(p)), "beta"=beta, "b"=b, "nstart"=nstart)
 
