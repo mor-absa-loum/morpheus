@@ -51,7 +51,7 @@ generateSampleIO = function(n, p, β, b, link)
 	{
 		index = c(index, rep(i, classes[i]))
 		newXblock = cbind( MASS::mvrnorm(classes[i], zero_mean, id_sigma), 1 )
-		arg_link = newXblock%*%β[,i]
+		arg_link = newXblock %*% β
 		probas =
 			if (link == "logit")
 			{
@@ -61,8 +61,10 @@ generateSampleIO = function(n, p, β, b, link)
 			else #"probit"
 				pnorm(arg_link)
 		probas[is.nan(probas)] = 1 #overflow of exp(x)
+		probas = rowSums(p * probas)
 		X = rbind(X, newXblock)
-		Y = c( Y, vapply(probas, function(p) (rbinom(1,1,p)), 1) )
+		Y = c( Y, vapply(probas, function(p) (ifelse(p >= .5, 1, 0)), 1) )
+		#Y = c( Y, vapply(probas, function(p) (rbinom(1,1,p)), 1) )
 	}
 	shuffle = sample(n)
 	# Returned X should not contain an intercept column (it's an argument of estimation

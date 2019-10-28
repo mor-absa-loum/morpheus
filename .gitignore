@@ -22,7 +22,7 @@ NAMESPACE
 .Rhistory
 .RData
 
-#ignore R CMD build/check genrated files
+#ignore R CMD build/check generated files
 /*.Rcheck/
 /*.tar.gz
 
