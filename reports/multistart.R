@@ -107,4 +107,4 @@ ms <- testMultistart(N, n, K, p, beta, b, link, nstart, ncores)
 ms_params <- list("N"=N, "nc"=ncores, "n"=n, "K"=K, "d"=d, "link"=link,
 	"p"=c(p,1-sum(p)), "beta"=beta, "b"=b, "nstart"=nstart)
 
-save("ms", "ms_params", file="multistart.RData")
+save("ms", "ms_params", file=paste("res_",n,"_",d,"_",link,"_",nstart,".RData",sep=""))
