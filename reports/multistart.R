@@ -58,7 +58,7 @@ testMultistart <- function(N, n, d, K, p, beta, b, link, nstart, ncores)
 			fargs
     }, N=N, ncores=ncores, verbose=TRUE)
   for (i in 1:2)
-    res[[i]] <- alignMatrices(ms[[i]], ref=rbind(p,beta,b), ls_mode="exact")
+    res[[i]] <- alignMatrices(mr[[i]], ref=rbind(p,beta,b), ls_mode="exact")
   res
 }
 
