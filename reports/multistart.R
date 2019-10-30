@@ -2,7 +2,7 @@ library(morpheus)
 
 testMultistart <- function(N, n, d, K, p, beta, b, link, nstart, ncores)
 {
-  ms <- multiRun(
+  res <- multiRun(
     list(n=n,p=p,beta=beta,b=b,optargs=list(K=K,d=d,link=link,nstart=nstart)),
     list(
       function(fargs) {
@@ -11,11 +11,11 @@ testMultistart <- function(N, n, d, K, p, beta, b, link, nstart, ncores)
         K <- fargs$optargs$K
         op <- optimParams(K, fargs$optargs$link, fargs$optargs)
         x_init <- list(p=rep(1/K,K-1), beta=fargs$mu, b=rep(0,K))
-				res <- NULL
+				res2 <- NULL
 				tryCatch({
-          res <- do.call(rbind, op$run(x_init))
+          res2 <- do.call(rbind, op$run(x_init))
 				}, error = function(e) {})
-				res
+				res2
       },
       function(fargs) {
         # B starts
@@ -58,8 +58,8 @@ testMultistart <- function(N, n, d, K, p, beta, b, link, nstart, ncores)
 			fargs
     }, N=N, ncores=ncores, verbose=TRUE)
   for (i in 1:2)
-    ms[[i]] <- alignMatrices(ms[[i]], ref=rbind(p,beta,b), ls_mode="exact")
-  ms
+    res[[i]] <- alignMatrices(ms[[i]], ref=rbind(p,beta,b), ls_mode="exact")
+  res
 }
 
 #model = binomial
@@ -101,8 +101,8 @@ betas <- list(
 	matrix( c(1,2,-1,0,3,4,-1,-3,0,2, 2,-3,0,1,0,-1,-4,3,2,0), ncol=K ) ) #d=10
 beta <- betas[[ ifelse( d==2, 1, ifelse(d==5,2,3) ) ]]
 
-ms <- testMultistart(N, n, d, K, p, beta, b, link, nstart, ncores)
-ms_params <- list("N"=N, "nc"=ncores, "n"=n, "K"=K, "d"=d, "link"=link,
+mr <- testMultistart(N, n, d, K, p, beta, b, link, nstart, ncores)
+mr_params <- list("N"=N, "nc"=ncores, "n"=n, "K"=K, "d"=d, "link"=link,
 	"p"=c(p,1-sum(p)), "beta"=beta, "b"=b, "nstart"=nstart)
 
-save("ms", "ms_params", file=paste("res_",n,"_",d,"_",link,"_",nstart,".RData",sep=""))
+save("mr", "mr_params", file=paste("res_",n,"_",d,"_",link,"_",nstart,".RData",sep=""))
