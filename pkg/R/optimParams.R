@@ -57,14 +57,9 @@ optimParams = function(K, link=c("logit","probit"), optargs=list())
 		M <- computeMoments(optargs$X,optargs$Y)
 	}
 
-  weights <- optargs$weights
-  if (is.null(weights))
-    weights <- rep(1, 3)
-
 	# Build and return optimization algorithm object
 	methods::new("OptimParams", "li"=link, "M1"=as.double(M[[1]]),
-		"M2"=as.double(M[[2]]), "M3"=as.double(M[[3]]),
-    "weights"=weights, "K"=as.integer(K))
+		"M2"=as.double(M[[2]]), "M3"=as.double(M[[3]]), "K"=as.integer(K))
 }
 
 # Encapsulated optimization for p (proportions), β and b (regression parameters)
@@ -73,7 +68,6 @@ optimParams = function(K, link=c("logit","probit"), optargs=list())
 # @field M1 Estimated first-order moment
 # @field M2 Estimated second-order moment (flattened)
 # @field M3 Estimated third-order moment (flattened)
-# @field weights Vector of moments' weights
 # @field K Number of populations
 # @field d Number of dimensions
 #
@@ -86,10 +80,11 @@ setRefClass(
 		M1 = "numeric", #order-1 moment (vector size d)
 		M2 = "numeric", #M2 easier to process as a vector
 		M3 = "numeric", #M3 easier to process as a vector
-		weights = "numeric", #weights on moments
 		# Dimensions
 		K = "integer",
-		d = "integer"
+		d = "integer",
+    # Weights matrix (generalized least square)
+    W = "matrix"
 	),
 
 	methods = list(
@@ -105,6 +100,7 @@ setRefClass(
 			}
 
 			d <<- length(M1)
+      W <<- diag(d+d^2+d^3) #initialize at W = Identity
 		},
 
 		expArgs = function(x)
@@ -127,7 +123,7 @@ setRefClass(
 
 		f = function(x)
 		{
-			"Sum of squares (Mi - hat_Mi)^2 where Mi is obtained from formula"
+			"Product t(Mi - hat_Mi) W (Mi - hat_Mi) with Mi(theta)"
 
 			P <- expArgs(x)
 			p <- P$p
@@ -140,9 +136,9 @@ setRefClass(
 			β3 <- apply(β, 2, function(col) col %o% col %o% col)
 
 			return(
-				weights[1] * sum( ( β  %*% (p * .G(li,1,λ,b)) - M1 )^2 ) +
-				weights[2] * sum( ( β2 %*% (p * .G(li,2,λ,b)) - M2 )^2 ) +
-				weights[3] * sum( ( β3 %*% (p * .G(li,3,λ,b)) - M3 )^2 ) )
+				sum( ( β  %*% (p * .G(li,1,λ,b)) - M1 )^2 ) +
+				sum( ( β2 %*% (p * .G(li,2,λ,b)) - M2 )^2 ) +
+				sum( ( β3 %*% (p * .G(li,3,λ,b)) - M3 )^2 ) )
 		},
 
 		grad_f = function(x)
@@ -174,9 +170,9 @@ setRefClass(
 
 			km1 = 1:(K-1)
 			grad <- #gradient on p
-				weights[1] * t( sweep(as.matrix(β [,km1]), 2, G1[km1], '*') - G1[K] * β [,K] ) %*% F1 +
-				weights[2] * t( sweep(as.matrix(β2[,km1]), 2, G2[km1], '*') - G2[K] * β2[,K] ) %*% F2 +
-				weights[3] * t( sweep(as.matrix(β3[,km1]), 2, G3[km1], '*') - G3[K] * β3[,K] ) %*% F3
+			  t( sweep(as.matrix(β [,km1]), 2, G1[km1], '*') - G1[K] * β [,K] ) %*% F1 +
+				t( sweep(as.matrix(β2[,km1]), 2, G2[km1], '*') - G2[K] * β2[,K] ) %*% F2 +
+				t( sweep(as.matrix(β3[,km1]), 2, G3[km1], '*') - G3[K] * β3[,K] ) %*% F3
 
 			grad_β <- matrix(nrow=d, ncol=K)
 			for (i in 1:d)
@@ -205,17 +201,14 @@ setRefClass(
 				dβ3_right[block,] <- dβ3_right[block,] + β2
 				dβ3 <- dβ3_left + sweep(dβ3_right, 2, p * G3, '*')
 
-				grad_β[i,] <-
-          weights[1] * t(dβ) %*% F1 +
-          weights[2] * t(dβ2) %*% F2 +
-          weights[3] * t(dβ3) %*% F3
+				grad_β[i,] <- t(dβ) %*% F1 + t(dβ2) %*% F2 + t(dβ3) %*% F3
 			}
 			grad <- c(grad, as.double(grad_β))
 
 			grad = c(grad, #gradient on b
-				weights[1] * t( sweep(β,  2, p * G2, '*') ) %*% F1 +
-				weights[2] * t( sweep(β2, 2, p * G3, '*') ) %*% F2 +
-				weights[3] * t( sweep(β3, 2, p * G4, '*') ) %*% F3 )
+				t( sweep(β,  2, p * G2, '*') ) %*% F1 +
+				t( sweep(β2, 2, p * G3, '*') ) %*% F2 +
+				t( sweep(β3, 2, p * G4, '*') ) %*% F3 )
 
 			grad
 		},

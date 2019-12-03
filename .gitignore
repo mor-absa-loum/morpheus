@@ -17,6 +17,7 @@ NAMESPACE
 /vignettes/report.html
 /vignettes/report_cache/
 /vignettes/report_files/
+/vignettes/*.zip
 
 #ignore R session files
 .Rhistory
