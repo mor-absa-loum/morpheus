@@ -1,17 +1,9 @@
-#' Optimize parameters
-#'
-#' Optimize the parameters of a mixture of logistic regressions model, possibly using
-#' \code{mu <- computeMu(...)} as a partial starting point.
+#' Wrapper function for OptimParams class
 #'
 #' @param K Number of populations.
 #' @param link The link type, 'logit' or 'probit'.
-#' @param optargs a list with optional arguments:
-#'   \itemize{
-#'     \item 'M' : list of moments of order 1,2,3: will be computed if not provided.
-#'     \item 'X,Y' : input/output, mandatory if moments not given
-#'     \item 'exact': use exact formulas when available?
-#'     \item weights Weights on moments when minimizing sum of squares
-#'   }
+#' @param X Data matrix of covariables
+#' @param Y Output as a binary vector
 #'
 #' @return An object 'op' of class OptimParams, initialized so that \code{op$run(x0)}
 #'   outputs the list of optimized parameters
@@ -30,58 +22,57 @@
 #' # Optimize parameters from estimated μ
 #' io = generateSampleIO(10000, 1/2, matrix(c(1,-2,3,1),ncol=2), c(0,0), "logit")
 #' μ = computeMu(io$X, io$Y, list(K=2))
-#' M <- computeMoments(io$X, io$Y)
-#' o <- optimParams(2, "logit", list(M=M))
-#' x0 <- c(1/2, as.double(μ), c(0,0))
+#' o <- optimParams(io$X, io$Y, 2, "logit")
+#' x0 <- list(p=1/2, β=μ, b=c(0,0))
 #' par0 <- o$run(x0)
 #' # Compare with another starting point
-#' x1 <- c(1/2, 2*as.double(μ), c(0,0))
+#' x1 <- list(p=1/2, β=2*μ, b=c(0,0))
 #' par1 <- o$run(x1)
 #' o$f( o$linArgs(par0) )
 #' o$f( o$linArgs(par1) )
 #' @export
-optimParams = function(K, link=c("logit","probit"), optargs=list())
+optimParams = function(X, Y, K, link=c("logit","probit"))
 {
 	# Check arguments
+  if (!is.matrix(X) || any(is.na(X)))
+    stop("X: numeric matrix, no NAs")
+  if (!is.numeric(Y) || any(is.na(Y)) || any(Y!=0 | Y!=1))
+    stop("Y: binary vector with 0 and 1 only")
 	link <- match.arg(link)
-	if (!is.list(optargs))
-		stop("optargs: list")
-	if (!is.numeric(K) || K < 2)
-		stop("K: integer >= 2")
-
-	M <- optargs$M
-	if (is.null(M))
-	{
-		if (is.null(optargs$X) || is.null(optargs$Y))
-			stop("If moments are not provided, X and Y are required")
-		M <- computeMoments(optargs$X,optargs$Y)
-	}
+  if (!is.numeric(K) || K!=floor(K) || K < 2)
+    stop("K: integer >= 2")
 
 	# Build and return optimization algorithm object
-	methods::new("OptimParams", "li"=link, "M1"=as.double(M[[1]]),
-		"M2"=as.double(M[[2]]), "M3"=as.double(M[[3]]), "K"=as.integer(K))
+	methods::new("OptimParams", "li"=link, "X"=X,
+    "Y"=as.integer(Y), "K"=as.integer(K))
 }
 
-# Encapsulated optimization for p (proportions), β and b (regression parameters)
-#
-# @field li Link, 'logit' or 'probit'
-# @field M1 Estimated first-order moment
-# @field M2 Estimated second-order moment (flattened)
-# @field M3 Estimated third-order moment (flattened)
-# @field K Number of populations
-# @field d Number of dimensions
-#
+#' Encapsulated optimization for p (proportions), β and b (regression parameters)
+#'
+#' Optimize the parameters of a mixture of logistic regressions model, possibly using
+#' \code{mu <- computeMu(...)} as a partial starting point.
+#'
+#' @field li Link function, 'logit' or 'probit'
+#' @field X Data matrix of covariables
+#' @field Y Output as a binary vector
+#' @field K Number of populations
+#' @field d Number of dimensions
+#' @field W Weights matrix (iteratively refined)
+#'
 setRefClass(
 	Class = "OptimParams",
 
 	fields = list(
 		# Inputs
-		li = "character", #link 'logit' or 'probit'
-		M1 = "numeric", #order-1 moment (vector size d)
+		li = "character", #link function
+		X = "matrix",
+		Y = "numeric",
+		M1 = "numeric",
 		M2 = "numeric", #M2 easier to process as a vector
-		M3 = "numeric", #M3 easier to process as a vector
+		M3 = "numeric", #same for M3
 		# Dimensions
 		K = "integer",
+    n = "integer",
 		d = "integer",
     # Weights matrix (generalized least square)
     W = "matrix"
@@ -90,15 +81,19 @@ setRefClass(
 	methods = list(
 		initialize = function(...)
 		{
-			"Check args and initialize K, d"
+			"Check args and initialize K, d, W"
 
-			callSuper(...)
-			if (!hasArg("li") || !hasArg("M1") || !hasArg("M2") || !hasArg("M3")
-				|| !hasArg("K"))
-			{
+      callSuper(...)
+			if (!hasArg("X") || !hasArg("Y") || !hasArg("K") || !hasArg("li"))
 				stop("Missing arguments")
-			}
 
+      # Precompute empirical moments
+      M <- computeMoments(optargs$X,optargs$Y)
+      M1 <<- as.double(M[[1]])
+      M2 <<- as.double(M[[2]])
+      M3 <<- as.double(M[[3]])
+
+			n <<- nrow(X)
 			d <<- length(M1)
       W <<- diag(d+d^2+d^3) #initialize at W = Identity
 		},
@@ -121,31 +116,48 @@ setRefClass(
 			c(o$p[1:(K-1)], as.double(o$β), o$b)
 		},
 
-		f = function(x)
-		{
+    getOmega = function(theta)
+    {
+      dim <- d + d^2 + d^3
+      matrix( .C("Compute_Omega",
+        X=as.double(X), Y=as.double(Y), pn=as.integer(n), pd=as.integer(d),
+        p=as.double(theta$p), β=as.double(theta$β), b=as.double(theta$b),
+        W=as.double(W), PACKAGE="morpheus")$W, nrow=dim, ncol=dim)
+    },
+
+    f = function(theta)
+    {
 			"Product t(Mi - hat_Mi) W (Mi - hat_Mi) with Mi(theta)"
 
-			P <- expArgs(x)
-			p <- P$p
-			β <- P$β
+      p <- theta$p
+			β <- theta$β
 			λ <- sqrt(colSums(β^2))
-			b <- P$b
+			b <- theta$b
 
 			# Tensorial products β^2 = β2 and β^3 = β3 must be computed from current β1
 			β2 <- apply(β, 2, function(col) col %o% col)
 			β3 <- apply(β, 2, function(col) col %o% col %o% col)
 
-			return(
-				sum( ( β  %*% (p * .G(li,1,λ,b)) - M1 )^2 ) +
-				sum( ( β2 %*% (p * .G(li,2,λ,b)) - M2 )^2 ) +
-				sum( ( β3 %*% (p * .G(li,3,λ,b)) - M3 )^2 ) )
-		},
+			A <- matrix(c(
+				β  %*% (p * .G(li,1,λ,b)) - M1,
+				β2 %*% (p * .G(li,2,λ,b)) - M2,
+				β3 %*% (p * .G(li,3,λ,b)) - M3), ncol=1)
+      t(A) %*% W %*% A
+    },
 
 		grad_f = function(x)
 		{
 			"Gradient of f, dimension (K-1) + d*K + K = (d+2)*K - 1"
 
-			P <- expArgs(x)
+      # TODO: formula -2 t(grad M(theta)) . W . (Mhat - M(theta))
+    }
+
+    grad_M = function(theta)
+    {
+      # TODO: adapt code below for grad of d+d^2+d^3 vector of moments,
+      # instead of grad (sum(Mhat-M(theta)^2)) --> should be easier
+
+      P <- expArgs(x)
 			p <- P$p
 			β <- P$β
 			λ <- sqrt(colSums(β^2))
@@ -213,6 +225,7 @@ setRefClass(
 			grad
 		},
 
+    # TODO: rename x(0) into theta(0) --> θ
 		run = function(x0)
 		{
 			"Run optimization from x0 with solver..."
@@ -239,6 +252,10 @@ setRefClass(
 					matrix(0, nrow=K, ncol=(d+1)*K) ),
 				ci=c(-1,rep(0,K-1)) )
 
+      # We get a first non-trivial estimation of W: getOmega(theta)^{-1}
+      # TODO: loop, this redefine f, so that we can call constrOptim again...
+      # Stopping condition? N iterations? Delta <= ε ?
+
 			expArgs(op_res$par)
 		}
 	)
@@ -246,6 +263,7 @@ setRefClass(
 
 # Compute vectorial E[g^{(order)}(<β,x> + b)] with x~N(0,Id) (integral in R^d)
 #                 = E[g^{(order)}(z)] with z~N(b,diag(λ))
+# by numerically evaluating the integral.
 #
 # @param link Link, 'logit' or 'probit'
 # @param order Order of derivative
@@ -257,56 +275,23 @@ setRefClass(
 	# NOTE: weird "integral divergent" error on inputs:
 	# link="probit"; order=2; λ=c(531.8099,586.8893,523.5816); b=c(-118.512674,-3.488020,2.109969)
 	# Switch to pracma package for that (but it seems slow...)
-
-	exactComp <- FALSE #TODO: global, or argument...
-
-	if (exactComp && link == "probit")
-	{
-		# Use exact computations
-		sapply( seq_along(λ), function(k) {
-			.exactProbitIntegral(order, λ[k], b[k])
-		})
-	}
-
-	else
-	{
-		# Numerical integration
-		sapply( seq_along(λ), function(k) {
-			res <- NULL
-			tryCatch({
-				# Fast code, may fail:
-				res <- stats::integrate(
-					function(z) .deriv[[link]][[order]](λ[k]*z+b[k]) * exp(-z^2/2) / sqrt(2*pi),
-					lower=-Inf, upper=Inf )$value
-			}, error = function(e) {
-				# Robust slow code, no fails observed:
-				sink("/dev/null") #pracma package has some useless printed outputs...
-				res <- pracma::integral(
-					function(z) .deriv[[link]][[order]](λ[k]*z+b[k]) * exp(-z^2/2) / sqrt(2*pi),
-					xmin=-Inf, xmax=Inf, method="Kronrod")
-				sink()
-			})
-			res
-		})
-	}
-}
-
-# TODO: check these computations (wrong atm)
-.exactProbitIntegral <- function(order, λ, b)
-{
-	c1 = (1/sqrt(2*pi)) * exp( -.5 * b/((λ^2+1)^2) )
-	if (order == 1)
-		return (c1)
-	c2 = b - λ^2 / (λ^2+1)
-	if (order == 2)
-		return (c1 * c2)
-	if (order == 3)
-		return (c1 * (λ^2 - 1 + c2^2))
-	if (order == 4)
-		return ( (c1*c2/((λ^2+1)^2)) * (-λ^4*((b+1)^2+1) -
-			2*λ^3 + λ^2*(2-2*b*(b-1)) + 6*λ + 3 - b^2) )
-	if (order == 5) #only remaining case...
-		return ( c1 * (3*λ^4+c2^4+6*c1^2*(λ^2-1) - 6*λ^2 + 6) )
+  sapply( seq_along(λ), function(k) {
+    res <- NULL
+    tryCatch({
+      # Fast code, may fail:
+      res <- stats::integrate(
+        function(z) .deriv[[link]][[order]](λ[k]*z+b[k]) * exp(-z^2/2) / sqrt(2*pi),
+        lower=-Inf, upper=Inf )$value
+    }, error = function(e) {
+      # Robust slow code, no fails observed:
+      sink("/dev/null") #pracma package has some useless printed outputs...
+      res <- pracma::integral(
+        function(z) .deriv[[link]][[order]](λ[k]*z+b[k]) * exp(-z^2/2) / sqrt(2*pi),
+        xmin=-Inf, xmax=Inf, method="Kronrod")
+      sink()
+    })
+    res
+  })
 }
 
 # Derivatives list: g^(k)(x) for links 'logit' and 'probit'
@@ -314,7 +299,7 @@ setRefClass(
 .deriv <- list(
 	"probit"=list(
 		# 'probit' derivatives list;
-		# TODO: exact values for the integral E[g^(k)(λz+b)]
+		# NOTE: exact values for the integral E[g^(k)(λz+b)] could be computed
 		function(x) exp(-x^2/2)/(sqrt(2*pi)),                     #g'
 		function(x) exp(-x^2/2)/(sqrt(2*pi)) *  -x,               #g''
 		function(x) exp(-x^2/2)/(sqrt(2*pi)) * ( x^2 - 1),        #g^(3)

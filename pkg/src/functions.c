@@ -53,3 +53,10 @@ void Moments_M3(double* X, double* Y, int* pn, int* pd, double* M3)
 		}
 	}
 }
+
+void Compute_Omega(double* X, double* Y, int* pn, int* pd, double* W)
+{
+  // TODO: formula 1/N sum( t(g(Zi,theta)) g(Zi,theta) )
+  // = 1/N sum( t( (XiYi-...) - theta[i] ) ( ... ) )
+  // --> similar to Moments_M2 and M3 above
+}
