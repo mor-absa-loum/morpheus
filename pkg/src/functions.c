@@ -54,9 +54,17 @@ void Moments_M3(double* X, double* Y, int* pn, int* pd, double* M3)
 	}
 }
 
-void Compute_Omega(double* X, double* Y, int* pn, int* pd, double* W)
+void Compute_Omega(double* X, double* Y, double* M, int* pn, int* pd, double* W)
 {
+	int n=*pn, d=*pd;
+  //double* W = (double*)calloc(d+d*d+d*d*d,sizeof(double));
+
   // TODO: formula 1/N sum( t(g(Zi,theta)) g(Zi,theta) )
-  // = 1/N sum( t( (XiYi-...) - theta[i] ) ( ... ) )
+  // = 1/N sum( t( (XiYi-...) - M[i] ) ( ... ) )
   // --> similar to Moments_M2 and M3 above
+  for (int j=0; j<
+  for (int i=0; i<n; i++)
+  {
+    W[] += 
+  }
 }

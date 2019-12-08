@@ -12,8 +12,8 @@
 #'     \item β: regression matrix, size dxK
 #'     \item b: intercepts, size K
 #'   }
-#'   x0 is a vector containing respectively the K-1 first elements of p, then β by
-#'   columns, and finally b: \code{x0 = c(p[1:(K-1)],as.double(β),b)}.
+#'   θ0 is a vector containing respectively the K-1 first elements of p, then β by
+#'   columns, and finally b: \code{θ0 = c(p[1:(K-1)],as.double(β),b)}.
 #'
 #' @seealso \code{multiRun} to estimate statistics based on β, and
 #'   \code{generateSampleIO} for I/O random generation.
@@ -23,11 +23,11 @@
 #' io = generateSampleIO(10000, 1/2, matrix(c(1,-2,3,1),ncol=2), c(0,0), "logit")
 #' μ = computeMu(io$X, io$Y, list(K=2))
 #' o <- optimParams(io$X, io$Y, 2, "logit")
-#' x0 <- list(p=1/2, β=μ, b=c(0,0))
-#' par0 <- o$run(x0)
+#' θ0 <- list(p=1/2, β=μ, b=c(0,0))
+#' par0 <- o$run(θ0)
 #' # Compare with another starting point
-#' x1 <- list(p=1/2, β=2*μ, b=c(0,0))
-#' par1 <- o$run(x1)
+#' θ1 <- list(p=1/2, β=2*μ, b=c(0,0))
+#' par1 <- o$run(θ1)
 #' o$f( o$linArgs(par0) )
 #' o$f( o$linArgs(par1) )
 #' @export
@@ -67,9 +67,7 @@ setRefClass(
 		li = "character", #link function
 		X = "matrix",
 		Y = "numeric",
-		M1 = "numeric",
-		M2 = "numeric", #M2 easier to process as a vector
-		M3 = "numeric", #same for M3
+    Mhat = "numeric", #vector of empirical moments
 		# Dimensions
 		K = "integer",
     n = "integer",
@@ -89,80 +87,90 @@ setRefClass(
 
       # Precompute empirical moments
       M <- computeMoments(optargs$X,optargs$Y)
-      M1 <<- as.double(M[[1]])
-      M2 <<- as.double(M[[2]])
-      M3 <<- as.double(M[[3]])
+      M1 <- as.double(M[[1]])
+      M2 <- as.double(M[[2]])
+      M3 <- as.double(M[[3]])
+      Mhat <<- matrix(c(M1,M2,M3), ncol=1)
 
 			n <<- nrow(X)
 			d <<- length(M1)
       W <<- diag(d+d^2+d^3) #initialize at W = Identity
 		},
 
-		expArgs = function(x)
+		expArgs = function(v)
 		{
-			"Expand individual arguments from vector x"
+			"Expand individual arguments from vector v into a list"
 
 			list(
 				# p: dimension K-1, need to be completed
-				"p" = c(x[1:(K-1)], 1-sum(x[1:(K-1)])),
-				"β" = matrix(x[K:(K+d*K-1)], ncol=K),
-				"b" = x[(K+d*K):(K+(d+1)*K-1)])
+				"p" = c(v[1:(K-1)], 1-sum(v[1:(K-1)])),
+				"β" = matrix(v[K:(K+d*K-1)], ncol=K),
+				"b" = v[(K+d*K):(K+(d+1)*K-1)])
 		},
 
-		linArgs = function(o)
+		linArgs = function(L)
 		{
-			" Linearize vectors+matrices into a vector x"
+			"Linearize vectors+matrices from list L into a vector"
 
-			c(o$p[1:(K-1)], as.double(o$β), o$b)
+			c(L$p[1:(K-1)], as.double(L$β), L$b)
 		},
 
-    getOmega = function(theta)
+    computeW = function(θ)
     {
       dim <- d + d^2 + d^3
-      matrix( .C("Compute_Omega",
-        X=as.double(X), Y=as.double(Y), pn=as.integer(n), pd=as.integer(d),
-        p=as.double(theta$p), β=as.double(theta$β), b=as.double(theta$b),
-        W=as.double(W), PACKAGE="morpheus")$W, nrow=dim, ncol=dim)
+      W <<- solve( matrix( .C("Compute_Omega",
+        X=as.double(X), Y=as.double(Y), M=as.double(M(θ)),
+        pn=as.integer(n), pd=as.integer(d),
+        W=as.double(W), PACKAGE="morpheus")$W, nrow=dim, ncol=dim) )
+      NULL #avoid returning W
     },
 
-    f = function(theta)
+    M <- function(θ)
     {
-			"Product t(Mi - hat_Mi) W (Mi - hat_Mi) with Mi(theta)"
+      "Vector of moments, of size d+d^2+d^3"
 
-      p <- theta$p
-			β <- theta$β
+      p <- θ$p
+			β <- θ$β
 			λ <- sqrt(colSums(β^2))
-			b <- theta$b
+			b <- θ$b
 
 			# Tensorial products β^2 = β2 and β^3 = β3 must be computed from current β1
 			β2 <- apply(β, 2, function(col) col %o% col)
 			β3 <- apply(β, 2, function(col) col %o% col %o% col)
 
-			A <- matrix(c(
-				β  %*% (p * .G(li,1,λ,b)) - M1,
-				β2 %*% (p * .G(li,2,λ,b)) - M2,
-				β3 %*% (p * .G(li,3,λ,b)) - M3), ncol=1)
+			matrix(c(
+				β  %*% (p * .G(li,1,λ,b)),
+				β2 %*% (p * .G(li,2,λ,b)),
+				β3 %*% (p * .G(li,3,λ,b))), ncol=1)
+    },
+
+    f = function(θ)
+    {
+			"Product t(Mi - hat_Mi) W (Mi - hat_Mi) with Mi(theta)"
+
+			A <- M(θ) - Mhat
       t(A) %*% W %*% A
     },
 
-		grad_f = function(x)
+		grad_f = function(θ)
 		{
 			"Gradient of f, dimension (K-1) + d*K + K = (d+2)*K - 1"
 
-      # TODO: formula -2 t(grad M(theta)) . W . (Mhat - M(theta))
+      -2 * t(grad_M(θ)) %*% getW(θ) %*% (Mhat - M(θ))
     }
 
-    grad_M = function(theta)
+    grad_M = function(θ)
     {
-      # TODO: adapt code below for grad of d+d^2+d^3 vector of moments,
-      # instead of grad (sum(Mhat-M(theta)^2)) --> should be easier
+      "Gradient of the vector of moments, size (dim=)d+d^2+d^3 x K-1+K+d*K"
 
-      P <- expArgs(x)
-			p <- P$p
-			β <- P$β
+      L <- expArgs(θ)
+			p <- L$p
+			β <- L$β
 			λ <- sqrt(colSums(β^2))
 			μ <- sweep(β, 2, λ, '/')
-			b <- P$b
+			b <- L$b
+
+      res <- matrix(nrow=nrow(W), ncol=0)
 
 			# Tensorial products β^2 = β2 and β^3 = β3 must be computed from current β1
 			β2 <- apply(β, 2, function(col) col %o% col)
@@ -175,18 +183,13 @@ setRefClass(
 			G4 = .G(li,4,λ,b)
 			G5 = .G(li,5,λ,b)
 
-			# (Mi - hat_Mi)^2 ' == (Mi - hat_Mi)' 2(Mi - hat_Mi) = Mi' Fi
-			F1 = as.double( 2 * ( β  %*% (p * G1) - M1 ) )
-			F2 = as.double( 2 * ( β2 %*% (p * G2) - M2 ) )
-			F3 = as.double( 2 * ( β3 %*% (p * G3) - M3 ) )
-
+      # Gradient on p: K-1 columns, dim rows
 			km1 = 1:(K-1)
-			grad <- #gradient on p
-			  t( sweep(as.matrix(β [,km1]), 2, G1[km1], '*') - G1[K] * β [,K] ) %*% F1 +
-				t( sweep(as.matrix(β2[,km1]), 2, G2[km1], '*') - G2[K] * β2[,K] ) %*% F2 +
-				t( sweep(as.matrix(β3[,km1]), 2, G3[km1], '*') - G3[K] * β3[,K] ) %*% F3
+			res <- cbind(res, rbind(
+        t( sweep(as.matrix(β [,km1]), 2, G1[km1], '*') - G1[K] * β [,K] ),
+        t( sweep(as.matrix(β2[,km1]), 2, G2[km1], '*') - G2[K] * β2[,K] ),
+        t( sweep(as.matrix(β3[,km1]), 2, G3[km1], '*') - G3[K] * β3[,K] )))
 
-			grad_β <- matrix(nrow=d, ncol=K)
 			for (i in 1:d)
 			{
 				# i determines the derivated matrix dβ[2,3]
@@ -213,46 +216,47 @@ setRefClass(
 				dβ3_right[block,] <- dβ3_right[block,] + β2
 				dβ3 <- dβ3_left + sweep(dβ3_right, 2, p * G3, '*')
 
-				grad_β[i,] <- t(dβ) %*% F1 + t(dβ2) %*% F2 + t(dβ3) %*% F3
+				res <- cbind(res, rbind(t(dβ), t(dβ2), t(dβ3)))
 			}
-			grad <- c(grad, as.double(grad_β))
 
-			grad = c(grad, #gradient on b
-				t( sweep(β,  2, p * G2, '*') ) %*% F1 +
-				t( sweep(β2, 2, p * G3, '*') ) %*% F2 +
-				t( sweep(β3, 2, p * G4, '*') ) %*% F3 )
+      # Gradient on b
+			res <- cbind(res, rbind(
+				t( sweep(β,  2, p * G2, '*') ),
+				t( sweep(β2, 2, p * G3, '*') ),
+				t( sweep(β3, 2, p * G4, '*') )))
 
-			grad
+			res
 		},
 
-    # TODO: rename x(0) into theta(0) --> θ
-		run = function(x0)
+		run = function(θ0)
 		{
-			"Run optimization from x0 with solver..."
+			"Run optimization from θ0 with solver..."
 
-	    if (!is.list(x0))
-		    stop("x0: list")
-      if (is.null(x0$β))
-        stop("At least x0$β must be provided")
-			if (!is.matrix(x0$β) || any(is.na(x0$β)) || ncol(x0$β) != K)
-				stop("x0$β: matrix, no NA, ncol == K")
-      if (is.null(x0$p))
-        x0$p = rep(1/K, K-1)
-      else if (length(x0$p) != K-1 || sum(x0$p) > 1)
-        stop("x0$p should contain positive integers and sum to < 1")
+	    if (!is.list(θ0))
+		    stop("θ0: list")
+      if (is.null(θ0$β))
+        stop("At least θ0$β must be provided")
+			if (!is.matrix(θ0$β) || any(is.na(θ0$β)) || ncol(θ0$β) != K)
+				stop("θ0$β: matrix, no NA, ncol == K")
+      if (is.null(θ0$p))
+        θ0$p = rep(1/K, K-1)
+      else if (length(θ0$p) != K-1 || sum(θ0$p) > 1)
+        stop("θ0$p should contain positive integers and sum to < 1")
       # Next test = heuristic to detect missing b (when matrix is called "beta")
-      if (is.null(x0$b) || all(x0$b == x0$β))
-        x0$b = rep(0, K)
-      else if (any(is.na(x0$b)))
-        stop("x0$b cannot have missing values")
+      if (is.null(θ0$b) || all(θ0$b == θ0$β))
+        θ0$b = rep(0, K)
+      else if (any(is.na(θ0$b)))
+        stop("θ0$b cannot have missing values")
 
-			op_res = constrOptim( linArgs(x0), .self$f, .self$grad_f,
+			op_res = constrOptim( linArgs(θ0), .self$f, .self$grad_f,
 				ui=cbind(
 					rbind( rep(-1,K-1), diag(K-1) ),
 					matrix(0, nrow=K, ncol=(d+1)*K) ),
 				ci=c(-1,rep(0,K-1)) )
 
-      # We get a first non-trivial estimation of W: getOmega(theta)^{-1}
+      # debug:
+      print(computeW(expArgs(op_res$par)))
+      # We get a first non-trivial estimation of W
       # TODO: loop, this redefine f, so that we can call constrOptim again...
       # Stopping condition? N iterations? Delta <= ε ?
 
