@@ -190,6 +190,7 @@ setRefClass(
         t( sweep(as.matrix(β2[,km1]), 2, G2[km1], '*') - G2[K] * β2[,K] ),
         t( sweep(as.matrix(β3[,km1]), 2, G3[km1], '*') - G3[K] * β3[,K] )))
 
+      # TODO: understand derivatives order and match the one in optim init param
 			for (i in 1:d)
 			{
 				# i determines the derivated matrix dβ[2,3]

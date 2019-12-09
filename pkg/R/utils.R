@@ -74,23 +74,6 @@ normalize = function(X)
 computeMoments = function(X, Y)
 	list( colMeans(Y * X), .Moments_M2(X,Y), .Moments_M3(X,Y) )
 
-# Computes the Omega matrix for generalized least square method
-#
-# @param X matrix of covariates (of size n*d)
-# @param Y vector of responses (of size n)
-# @param theta list with p, beta, b
-#
-# @return Matrix of size dimxdim where dim=d+d^2+d^3
-#
-.Moments_M3 = function(X, Y)
-{
-	n = nrow(X)
-	d = ncol(X)
-	M3 = array(0,dim=c(d,d,d))
-	array( .C("Moments_M3", X=as.double(X), Y=as.double(Y), pn=as.integer(n),
-		pd=as.integer(d), M3=as.double(M3), PACKAGE="morpheus")$M3, dim=c(d,d,d) )
-}
-
 # Find the optimal assignment (permutation) between two sets (minimize cost)
 #
 # @param distances The distances matrix, in columns (distances[i,j] is distance between i
