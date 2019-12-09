@@ -36,7 +36,7 @@ optimParams <- function(X, Y, K, link=c("logit","probit"))
 	# Check arguments
   if (!is.matrix(X) || any(is.na(X)))
     stop("X: numeric matrix, no NAs")
-  if (!is.numeric(Y) || any(is.na(Y)) || any(Y!=0 | Y!=1))
+  if (!is.numeric(Y) || any(is.na(Y)) || any(Y!=0 & Y!=1))
     stop("Y: binary vector with 0 and 1 only")
 	link <- match.arg(link)
   if (!is.numeric(K) || K!=floor(K) || K < 2)
@@ -86,11 +86,11 @@ setRefClass(
 				stop("Missing arguments")
 
       # Precompute empirical moments
-      M <- computeMoments(optargs$X,optargs$Y)
+      M <- computeMoments(X, Y)
       M1 <- as.double(M[[1]])
       M2 <- as.double(M[[2]])
       M3 <- as.double(M[[3]])
-      Mhat <<- matrix(c(M1,M2,M3), ncol=1)
+      Mhat <<- c(M1, M2, M3)
 
 			n <<- nrow(X)
 			d <<- length(M1)
@@ -138,17 +138,18 @@ setRefClass(
 			β2 <- apply(β, 2, function(col) col %o% col)
 			β3 <- apply(β, 2, function(col) col %o% col %o% col)
 
-			matrix(c(
+			c(
 				β  %*% (p * .G(li,1,λ,b)),
 				β2 %*% (p * .G(li,2,λ,b)),
-				β3 %*% (p * .G(li,3,λ,b))), ncol=1)
+				β3 %*% (p * .G(li,3,λ,b)))
     },
 
     f = function(θ)
     {
 			"Product t(Mi - hat_Mi) W (Mi - hat_Mi) with Mi(theta)"
 
-			A <- Moments(θ) - Mhat
+      L <- expArgs(θ)
+			A <- as.matrix(Moments(L) - Mhat)
       t(A) %*% W %*% A
     },
 
@@ -156,19 +157,19 @@ setRefClass(
 		{
 			"Gradient of f, dimension (K-1) + d*K + K = (d+2)*K - 1"
 
-      -2 * t(grad_M(θ)) %*% W %*% (Mhat - Moments(θ))
+      L <- expArgs(θ)
+      -2 * t(grad_M(L)) %*% W %*% as.matrix((Mhat - Moments(L)))
     },
 
     grad_M = function(θ)
     {
       "Gradient of the vector of moments, size (dim=)d+d^2+d^3 x K-1+K+d*K"
 
-      L <- expArgs(θ)
-			p <- L$p
-			β <- L$β
+			p <- θ$p
+			β <- θ$β
 			λ <- sqrt(colSums(β^2))
 			μ <- sweep(β, 2, λ, '/')
-			b <- L$b
+			b <- θ$b
 
       res <- matrix(nrow=nrow(W), ncol=0)
 
@@ -185,10 +186,11 @@ setRefClass(
 
       # Gradient on p: K-1 columns, dim rows
 			km1 = 1:(K-1)
+
 			res <- cbind(res, rbind(
-        t( sweep(as.matrix(β [,km1]), 2, G1[km1], '*') - G1[K] * β [,K] ),
-        t( sweep(as.matrix(β2[,km1]), 2, G2[km1], '*') - G2[K] * β2[,K] ),
-        t( sweep(as.matrix(β3[,km1]), 2, G3[km1], '*') - G3[K] * β3[,K] )))
+        sweep(as.matrix(β [,km1]), 2, G1[km1], '*') - G1[K] * β [,K],
+        sweep(as.matrix(β2[,km1]), 2, G2[km1], '*') - G2[K] * β2[,K],
+        sweep(as.matrix(β3[,km1]), 2, G3[km1], '*') - G3[K] * β3[,K] ))
 
       # TODO: understand derivatives order and match the one in optim init param
 			for (i in 1:d)
@@ -217,14 +219,14 @@ setRefClass(
 				dβ3_right[block,] <- dβ3_right[block,] + β2
 				dβ3 <- dβ3_left + sweep(dβ3_right, 2, p * G3, '*')
 
-				res <- cbind(res, rbind(t(dβ), t(dβ2), t(dβ3)))
+				res <- cbind(res, rbind(dβ, dβ2, dβ3))
 			}
 
       # Gradient on b
 			res <- cbind(res, rbind(
-				t( sweep(β,  2, p * G2, '*') ),
-				t( sweep(β2, 2, p * G3, '*') ),
-				t( sweep(β3, 2, p * G4, '*') )))
+				sweep(β,  2, p * G2, '*'),
+				sweep(β2, 2, p * G3, '*'),
+				sweep(β3, 2, p * G4, '*') ))
 
 			res
 		},
@@ -256,8 +258,8 @@ setRefClass(
 				ci=c(-1,rep(0,K-1)) )
 
       # debug:
-      #computeW(expArgs(op_res$par))
-      #print(W)
+      computeW(expArgs(op_res$par))
+      print(W)
       # We get a first non-trivial estimation of W
       # TODO: loop, this redefine f, so that we can call constrOptim again...
       # Stopping condition? N iterations? Delta <= epsilon ?
