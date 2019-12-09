@@ -11,6 +11,7 @@ for file in `find -name *.R`; do
 		sed -i 's/β/beta/g' $file
 		sed -i 's/ρ/rho/g' $file
 		sed -i 's/λ/lambda/g' $file
+		sed -i 's/θ/theta/g' $file
 		sed -i 's/Σ/Sigma/g' $file
 	fi
 done

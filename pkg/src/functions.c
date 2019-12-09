@@ -59,14 +59,14 @@ void Moments_M3(double* X, double* Y, int* pn, int* pd, double* M3)
 void Compute_Omega(double* X, double* Y, double* M, int* pn, int* pd, double* W)
 {
 	int n=*pn, d=*pd;
-  //int dim = d+d*d+d*d*d
+  int dim = d + d*d + d*d*d;
   //double* W = (double*)calloc(dim*dim,sizeof(double));
   double* g = (double*)malloc(dim * sizeof(double));
   for (int i=0; i<n; i++)
   {
     // Fill gi:
     for (int j=0; j<d; j++)
-      g[j] = Y[i] * X[mi(i,j,n,d)] - M[i]
+      g[j] = Y[i] * X[mi(i,j,n,d)] - M[i];
     for (int j=d; j<d+(d*d); j++)
     {
       int idx1 = (j-d) % d; //num row
@@ -74,7 +74,7 @@ void Compute_Omega(double* X, double* Y, double* M, int* pn, int* pd, double* W)
       g[j] = 0.0;
       if (idx1 == idx2)
         g[j] -= Y[i];
-			g[j] += Y[i] * X[mi(i,idx1,n,d)]*X[mi(i,idx2,n,d)];
+			g[j] += Y[i] * X[mi(i,idx1,n,d)]*X[mi(i,idx2,n,d)] - M[i];
     }
     for (int j=d+d*d; j<dim; j++)
     {
@@ -82,14 +82,13 @@ void Compute_Omega(double* X, double* Y, double* M, int* pn, int* pd, double* W)
       int idx2 = ((j-d-d*d - idx1) / d) %d; //num col
       int idx3 = (((j-d-d*d - idx1) / d) - idx2) / d; //num "depth"
       g[j] = 0.0;
-      double tensor_elt = Y[i]*X[mi(i,k,n,d)] / n;
       if (idx1 == idx2)
         g[j] -= Y[i] * X[mi(i,idx3,n,d)];
       if (idx1 == idx3)
         g[j] -= Y[i] * X[mi(i,idx2,n,d)];
       if (idx2 == idx3)
         g[j] -= Y[i] * X[mi(i,idx1,n,d)];
-      g[j] += Y[i] * X[mi(i,idx1,n,d)]*X[mi(i,idx2,n,d)]*X[mi(i,idx3,n,d)];
+      g[j] += Y[i] * X[mi(i,idx1,n,d)]*X[mi(i,idx2,n,d)]*X[mi(i,idx3,n,d)] - M[i];
     }
     // Add 1/n t(gi) %*% gi to W
     for (int j=0; j<dim; j++)

@@ -31,7 +31,7 @@
 #' o$f( o$linArgs(par0) )
 #' o$f( o$linArgs(par1) )
 #' @export
-optimParams = function(X, Y, K, link=c("logit","probit"))
+optimParams <- function(X, Y, K, link=c("logit","probit"))
 {
 	# Check arguments
   if (!is.matrix(X) || any(is.na(X)))
@@ -119,13 +119,13 @@ setRefClass(
     {
       dim <- d + d^2 + d^3
       W <<- solve( matrix( .C("Compute_Omega",
-        X=as.double(X), Y=as.double(Y), M=as.double(M(θ)),
+        X=as.double(X), Y=as.double(Y), M=as.double(Moments(θ)),
         pn=as.integer(n), pd=as.integer(d),
         W=as.double(W), PACKAGE="morpheus")$W, nrow=dim, ncol=dim) )
       NULL #avoid returning W
     },
 
-    M <- function(θ)
+    Moments = function(θ)
     {
       "Vector of moments, of size d+d^2+d^3"
 
@@ -148,7 +148,7 @@ setRefClass(
     {
 			"Product t(Mi - hat_Mi) W (Mi - hat_Mi) with Mi(theta)"
 
-			A <- M(θ) - Mhat
+			A <- Moments(θ) - Mhat
       t(A) %*% W %*% A
     },
 
@@ -156,8 +156,8 @@ setRefClass(
 		{
 			"Gradient of f, dimension (K-1) + d*K + K = (d+2)*K - 1"
 
-      -2 * t(grad_M(θ)) %*% getW(θ) %*% (Mhat - M(θ))
-    }
+      -2 * t(grad_M(θ)) %*% W %*% (Mhat - Moments(θ))
+    },
 
     grad_M = function(θ)
     {
@@ -256,10 +256,11 @@ setRefClass(
 				ci=c(-1,rep(0,K-1)) )
 
       # debug:
-      print(computeW(expArgs(op_res$par)))
+      #computeW(expArgs(op_res$par))
+      #print(W)
       # We get a first non-trivial estimation of W
       # TODO: loop, this redefine f, so that we can call constrOptim again...
-      # Stopping condition? N iterations? Delta <= ε ?
+      # Stopping condition? N iterations? Delta <= epsilon ?
 
 			expArgs(op_res$par)
 		}
