@@ -20,54 +20,54 @@
 #' @export
 generateSampleIO = function(n, p, β, b, link)
 {
-	# Check arguments
-	tryCatch({n = as.integer(n)}, error=function(e) stop("Cannot convert n to integer"))
-	if (length(n) > 1)
-		warning("n is a vector but should be scalar: only first element used")
-	if (n <= 0)
-		stop("n: positive integer")
-	if (!is.matrix(β) || !is.numeric(β) || any(is.na(β)))
-		stop("β: real matrix, no NAs")
-	K = ncol(β)
-	if (!is.numeric(p) || length(p)!=K-1 || any(is.na(p)) || any(p<0) || sum(p) > 1)
-		stop("p: positive vector of size K-1, no NA, sum<=1")
-	p <- c(p, 1-sum(p))
-	if (!is.numeric(b) || length(b)!=K || any(is.na(b)))
-		stop("b: real vector of size K, no NA")
+  # Check arguments
+  tryCatch({n = as.integer(n)}, error=function(e) stop("Cannot convert n to integer"))
+  if (length(n) > 1)
+    warning("n is a vector but should be scalar: only first element used")
+  if (n <= 0)
+    stop("n: positive integer")
+  if (!is.matrix(β) || !is.numeric(β) || any(is.na(β)))
+    stop("β: real matrix, no NAs")
+  K = ncol(β)
+  if (!is.numeric(p) || length(p)!=K-1 || any(is.na(p)) || any(p<0) || sum(p) > 1)
+    stop("p: positive vector of size K-1, no NA, sum<=1")
+  p <- c(p, 1-sum(p))
+  if (!is.numeric(b) || length(b)!=K || any(is.na(b)))
+    stop("b: real vector of size K, no NA")
 
-	#random generation of the size of each population in X~Y (unordered)
-	classes = rmultinom(1, n, p)
+  #random generation of the size of each population in X~Y (unordered)
+  classes = rmultinom(1, n, p)
 
-	d = nrow(β)
-	zero_mean = rep(0,d)
-	id_sigma = diag(rep(1,d))
-	# Always consider an intercept (use b=0 for none)
-	d = d + 1
-	β = rbind(β, b)
-	X = matrix(nrow=0, ncol=d)
-	Y = c()
-	index = c()
-	for (i in 1:ncol(β))
-	{
-		index = c(index, rep(i, classes[i]))
-		newXblock = cbind( MASS::mvrnorm(classes[i], zero_mean, id_sigma), 1 )
-		arg_link = newXblock %*% β[,i] #β
-		probas =
-			if (link == "logit")
-			{
-				e_arg_link = exp(arg_link)
-				e_arg_link / (1 + e_arg_link)
-			}
-			else #"probit"
-				pnorm(arg_link)
-		probas[is.nan(probas)] = 1 #overflow of exp(x)
-		#probas = rowSums(p * probas)
-		X = rbind(X, newXblock)
-		#Y = c( Y, vapply(probas, function(p) (ifelse(p >= .5, 1, 0)), 1) )
-		Y = c( Y, vapply(probas, function(p) (rbinom(1,1,p)), 1) )
-	}
-	shuffle = sample(n)
-	# Returned X should not contain an intercept column (it's an argument of estimation
-	# methods)
-	list("X"=X[shuffle,-d], "Y"=Y[shuffle], "index"=index[shuffle])
+  d = nrow(β)
+  zero_mean = rep(0,d)
+  id_sigma = diag(rep(1,d))
+  # Always consider an intercept (use b=0 for none)
+  d = d + 1
+  β = rbind(β, b)
+  X = matrix(nrow=0, ncol=d)
+  Y = c()
+  index = c()
+  for (i in 1:ncol(β))
+  {
+    index = c(index, rep(i, classes[i]))
+    newXblock = cbind( MASS::mvrnorm(classes[i], zero_mean, id_sigma), 1 )
+    arg_link = newXblock %*% β[,i] #β
+    probas =
+      if (link == "logit")
+      {
+        e_arg_link = exp(arg_link)
+        e_arg_link / (1 + e_arg_link)
+      }
+      else #"probit"
+        pnorm(arg_link)
+    probas[is.nan(probas)] = 1 #overflow of exp(x)
+    #probas = rowSums(p * probas)
+    X = rbind(X, newXblock)
+    #Y = c( Y, vapply(probas, function(p) (ifelse(p >= .5, 1, 0)), 1) )
+    Y = c( Y, vapply(probas, function(p) (rbinom(1,1,p)), 1) )
+  }
+  shuffle = sample(n)
+  # Returned X should not contain an intercept column (it's an argument of estimation
+  # methods)
+  list("X"=X[shuffle,-d], "Y"=Y[shuffle], "index"=index[shuffle])
 }

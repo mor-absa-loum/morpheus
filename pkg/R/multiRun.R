@@ -82,48 +82,48 @@
 #'   res[[i]] <- alignMatrices(res[[i]], ref=β, ls_mode="exact")}
 #' @export
 multiRun <- function(fargs, estimParams,
-	prepareArgs = function(x,i) x, N=10, ncores=3, agg=lapply, verbose=FALSE)
+  prepareArgs = function(x,i) x, N=10, ncores=3, agg=lapply, verbose=FALSE)
 {
-	if (!is.list(fargs))
-		stop("fargs: list")
-	# No checks on fargs: supposedly done in estimParams[[i]]()
-	if (!is.list(estimParams))
-		estimParams = list(estimParams)
-	# Verify that the provided parameters estimations are indeed functions
-	lapply(seq_along(estimParams), function(i) {
-		if (!is.function(estimParams[[i]]))
-			stop("estimParams: list of function(fargs)")
-	})
-	if (!is.numeric(N) || N < 1)
-		stop("N: positive integer")
+  if (!is.list(fargs))
+    stop("fargs: list")
+  # No checks on fargs: supposedly done in estimParams[[i]]()
+  if (!is.list(estimParams))
+    estimParams = list(estimParams)
+  # Verify that the provided parameters estimations are indeed functions
+  lapply(seq_along(estimParams), function(i) {
+    if (!is.function(estimParams[[i]]))
+      stop("estimParams: list of function(fargs)")
+  })
+  if (!is.numeric(N) || N < 1)
+    stop("N: positive integer")
 
-	estimParamAtIndex <- function(index)
-	{
-		fargs <- prepareArgs(fargs, index)
-		if (verbose)
-			cat("Run ",index,"\n")
-		lapply(seq_along(estimParams), function(i) {
-			if (verbose)
-				cat("   Method ",i,"\n")
-			out <- estimParams[[i]](fargs)
-			if (is.list(out))
-				do.call(rbind, out)
-			else
-				out
-		})
-	}
+  estimParamAtIndex <- function(index)
+  {
+    fargs <- prepareArgs(fargs, index)
+    if (verbose)
+      cat("Run ",index,"\n")
+    lapply(seq_along(estimParams), function(i) {
+      if (verbose)
+        cat("   Method ",i,"\n")
+      out <- estimParams[[i]](fargs)
+      if (is.list(out))
+        do.call(rbind, out)
+      else
+        out
+    })
+  }
 
-	if (ncores > 1)
-	{
-		cl = parallel::makeCluster(ncores, outfile="")
-		parallel::clusterExport(cl, c("fargs","verbose"), environment())
-		list_res = parallel::clusterApplyLB(cl, 1:N, estimParamAtIndex)
-		parallel::stopCluster(cl)
-	}
-	else
-		list_res = lapply(1:N, estimParamAtIndex)
+  if (ncores > 1)
+  {
+    cl = parallel::makeCluster(ncores, outfile="")
+    parallel::clusterExport(cl, c("fargs","verbose"), environment())
+    list_res = parallel::clusterApplyLB(cl, 1:N, estimParamAtIndex)
+    parallel::stopCluster(cl)
+  }
+  else
+    list_res = lapply(1:N, estimParamAtIndex)
 
-	# De-interlace results: output one list per function
-	nf <- length(estimParams)
-	lapply( seq_len(nf), function(i) lapply(seq_len(N), function(j) list_res[[j]][[i]]) )
+  # De-interlace results: output one list per function
+  nf <- length(estimParams)
+  lapply( seq_len(nf), function(i) lapply(seq_len(N), function(j) list_res[[j]][[i]]) )
 }

@@ -26,67 +26,67 @@
 #' @export
 computeMu = function(X, Y, optargs=list())
 {
-	if (!is.matrix(X) || !is.numeric(X) || any(is.na(X)))
-		stop("X: real matrix, no NA")
-	n = nrow(X)
-	d = ncol(X)
-	if (!is.numeric(Y) || length(Y)!=n || any(Y!=0 & Y!=1))
-		stop("Y: vector of 0 and 1, size nrow(X), no NA")
-	if (!is.list(optargs))
-		stop("optargs: list")
+  if (!is.matrix(X) || !is.numeric(X) || any(is.na(X)))
+    stop("X: real matrix, no NA")
+  n = nrow(X)
+  d = ncol(X)
+  if (!is.numeric(Y) || length(Y)!=n || any(Y!=0 & Y!=1))
+    stop("Y: vector of 0 and 1, size nrow(X), no NA")
+  if (!is.list(optargs))
+    stop("optargs: list")
 
-	# Step 0: Obtain the empirically estimated moments tensor, estimate also K
-	M = if (is.null(optargs$M)) computeMoments(X,Y) else optargs$M
-	K = optargs$K
-	if (is.null(K))
-	{
-		# TODO: improve this basic heuristic
-		Σ = svd(M[[2]])$d
-		large_ratio <- ( abs(Σ[-d] / Σ[-1]) > 3 )
-		K <- if (any(large_ratio)) max(2, which.min(large_ratio)) else d
-	}
+  # Step 0: Obtain the empirically estimated moments tensor, estimate also K
+  M = if (is.null(optargs$M)) computeMoments(X,Y) else optargs$M
+  K = optargs$K
+  if (is.null(K))
+  {
+    # TODO: improve this basic heuristic
+    Σ = svd(M[[2]])$d
+    large_ratio <- ( abs(Σ[-d] / Σ[-1]) > 3 )
+    K <- if (any(large_ratio)) max(2, which.min(large_ratio)) else d
+  }
 
-	# Step 1: generate a family of d matrices to joint-diagonalize to increase robustness
-	d = ncol(X)
-	fixed_design = FALSE
-	jd_nvects = ifelse(!is.null(optargs$jd_nvects), optargs$jd_nvects, 0)
-	if (jd_nvects == 0)
-	{
-		jd_nvects = d
-		fixed_design = TRUE
-	}
-	M2_t = array(dim=c(d,d,jd_nvects))
-	for (i in seq_len(jd_nvects))
-	{
-		rho = if (fixed_design) c(rep(0,i-1),1,rep(0,d-i)) else normalize( rnorm(d) )
-		M2_t[,,i] = .T_I_I_w(M[[3]],rho)
-	}
+  # Step 1: generate a family of d matrices to joint-diagonalize to increase robustness
+  d = ncol(X)
+  fixed_design = FALSE
+  jd_nvects = ifelse(!is.null(optargs$jd_nvects), optargs$jd_nvects, 0)
+  if (jd_nvects == 0)
+  {
+    jd_nvects = d
+    fixed_design = TRUE
+  }
+  M2_t = array(dim=c(d,d,jd_nvects))
+  for (i in seq_len(jd_nvects))
+  {
+    rho = if (fixed_design) c(rep(0,i-1),1,rep(0,d-i)) else normalize( rnorm(d) )
+    M2_t[,,i] = .T_I_I_w(M[[3]],rho)
+  }
 
-	# Step 2: obtain factors u_i (and their inverse) from the joint diagonalisation of M2_t
-	jd_method = ifelse(!is.null(optargs$jd_method), optargs$jd_method, "uwedge")
-	V =
-		if (jd_nvects > 1) {
-			#NOTE: increasing itermax does not help to converge, thus we suppress warnings
-			suppressWarnings({jd = jointDiag::ajd(M2_t, method=jd_method)})
-#			if (jd_method=="uwedge") jd$B else solve(jd$A)
-			if (jd_method=="uwedge") jd$B else MASS::ginv(jd$A)
-		}
-		else
-			eigen(M2_t[,,1])$vectors
+  # Step 2: obtain factors u_i (and their inverse) from the joint diagonalisation of M2_t
+  jd_method = ifelse(!is.null(optargs$jd_method), optargs$jd_method, "uwedge")
+  V =
+    if (jd_nvects > 1) {
+      #NOTE: increasing itermax does not help to converge, thus we suppress warnings
+      suppressWarnings({jd = jointDiag::ajd(M2_t, method=jd_method)})
+#      if (jd_method=="uwedge") jd$B else solve(jd$A)
+      if (jd_method=="uwedge") jd$B else MASS::ginv(jd$A)
+    }
+    else
+      eigen(M2_t[,,1])$vectors
 
-	# Step 3: obtain final factors from joint diagonalisation of T(I,I,u_i)
-	M2_t = array(dim=c(d,d,K))
-	for (i in seq_len(K))
-		M2_t[,,i] = .T_I_I_w(M[[3]],V[,i])
-	suppressWarnings({jd = jointDiag::ajd(M2_t, method=jd_method)})
-#	U = if (jd_method=="uwedge") solve(jd$B) else jd$A
-	U = if (jd_method=="uwedge") MASS::ginv(jd$B) else jd$A
-	μ = normalize(U[,1:K])
+  # Step 3: obtain final factors from joint diagonalisation of T(I,I,u_i)
+  M2_t = array(dim=c(d,d,K))
+  for (i in seq_len(K))
+    M2_t[,,i] = .T_I_I_w(M[[3]],V[,i])
+  suppressWarnings({jd = jointDiag::ajd(M2_t, method=jd_method)})
+#  U = if (jd_method=="uwedge") solve(jd$B) else jd$A
+  U = if (jd_method=="uwedge") MASS::ginv(jd$B) else jd$A
+  μ = normalize(U[,1:K])
 
-	# M1 also writes M1 = sum_k coeff_k * μ_k, where coeff_k >= 0
-	# ==> search decomposition of vector M1 onto the (truncated) basis μ (of size dxK)
-	# This is a linear system μ %*% C = M1 with C of size K ==> C = psinv(μ) %*% M1
-	C = MASS::ginv(μ) %*% M[[1]]
-	μ[,C < 0] = - μ[,C < 0]
-	μ
+  # M1 also writes M1 = sum_k coeff_k * μ_k, where coeff_k >= 0
+  # ==> search decomposition of vector M1 onto the (truncated) basis μ (of size dxK)
+  # This is a linear system μ %*% C = M1 with C of size K ==> C = psinv(μ) %*% M1
+  C = MASS::ginv(μ) %*% M[[1]]
+  μ[,C < 0] = - μ[,C < 0]
+  μ
 }

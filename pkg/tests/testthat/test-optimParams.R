@@ -2,86 +2,86 @@ context("OptimParams")
 
 naive_f = function(link, M1,M2,M3, p,β,b)
 {
-	d = length(M1)
-	K = length(p)
-	λ <- sqrt(colSums(β^2))
+  d = length(M1)
+  K = length(p)
+  λ <- sqrt(colSums(β^2))
 
-	# Compute β x2,3 (self) tensorial products
-	β2 = array(0, dim=c(d,d,K))
-	β3 = array(0, dim=c(d,d,d,K))
-	for (k in 1:K)
-	{
-		for (i in 1:d)
-		{
-			for (j in 1:d)
-			{
-				β2[i,j,k] = β[i,k]*β[j,k]
-				for (l in 1:d)
-					β3[i,j,l,k] = β[i,k]*β[j,k]*β[l,k]
-			}
-		}
-	}
+  # Compute β x2,3 (self) tensorial products
+  β2 = array(0, dim=c(d,d,K))
+  β3 = array(0, dim=c(d,d,d,K))
+  for (k in 1:K)
+  {
+    for (i in 1:d)
+    {
+      for (j in 1:d)
+      {
+        β2[i,j,k] = β[i,k]*β[j,k]
+        for (l in 1:d)
+          β3[i,j,l,k] = β[i,k]*β[j,k]*β[l,k]
+      }
+    }
+  }
 
-	res = 0
-	for (i in 1:d)
-	{
-		term = 0
-		for (k in 1:K)
-			term = term + p[k]*.G(link,1,λ[k],b[k])*β[i,k]
-		res = res + (term - M1[i])^2
-		for (j in 1:d)
-		{
-			term = 0
-			for (k in 1:K)
-				term = term + p[k]*.G(link,2,λ[k],b[k])*β2[i,j,k]
-			res = res + (term - M2[i,j])^2
-			for (l in 1:d)
-			{
-				term = 0
-				for (k in 1:K)
-					term = term + p[k]*.G(link,3,λ[k],b[k])*β3[i,j,l,k]
-				res = res + (term - M3[i,j,l])^2
-			}
-		}
-	}
-	res
+  res = 0
+  for (i in 1:d)
+  {
+    term = 0
+    for (k in 1:K)
+      term = term + p[k]*.G(link,1,λ[k],b[k])*β[i,k]
+    res = res + (term - M1[i])^2
+    for (j in 1:d)
+    {
+      term = 0
+      for (k in 1:K)
+        term = term + p[k]*.G(link,2,λ[k],b[k])*β2[i,j,k]
+      res = res + (term - M2[i,j])^2
+      for (l in 1:d)
+      {
+        term = 0
+        for (k in 1:K)
+          term = term + p[k]*.G(link,3,λ[k],b[k])*β3[i,j,l,k]
+        res = res + (term - M3[i,j,l])^2
+      }
+    }
+  }
+  res
 }
 
 test_that("naive computation provides the same result as vectorized computations",
 {
-	h <- 1e-7 #for finite-difference tests
-	tol <- 1e-3 #large tolerance, necessary in some cases... (generally 1e-6 is OK)
-	for (dK in list( c(2,2), c(5,3)))
-	{
-		d = dK[1]
-		K = dK[2]
+  h <- 1e-7 #for finite-difference tests
+  tol <- 1e-3 #large tolerance, necessary in some cases... (generally 1e-6 is OK)
+  for (dK in list( c(2,2), c(5,3)))
+  {
+    d = dK[1]
+    K = dK[2]
 
-		M1 = runif(d, -1, 1)
-		M2 = matrix(runif(d*d,-1,1), ncol=d)
-		M3 = array(runif(d*d*d,-1,1), dim=c(d,d,d))
+    M1 = runif(d, -1, 1)
+    M2 = matrix(runif(d*d,-1,1), ncol=d)
+    M3 = array(runif(d*d*d,-1,1), dim=c(d,d,d))
 
-		for (link in c("logit","probit"))
-		{
-			op = new("OptimParams", "li"=link, "M1"=as.double(M1),
-				"M2"=as.double(M2), "M3"=as.double(M3), "K"=as.integer(K))
+    for (link in c("logit","probit"))
+    {
+      op = new("OptimParams", "li"=link, "M1"=as.double(M1),
+        "M2"=as.double(M2), "M3"=as.double(M3), "K"=as.integer(K))
 
-			for (var in seq_len((2+d)*K-1))
-			{
-				p = runif(K, 0, 1)
-				p = p / sum(p)
-				β <- matrix(runif(d*K,-5,5),ncol=K)
-				b = runif(K, -5, 5)
-				x <- c(p[1:(K-1)],as.double(β),b)
+      for (var in seq_len((2+d)*K-1))
+      {
+        p = runif(K, 0, 1)
+        p = p / sum(p)
+        β <- matrix(runif(d*K,-5,5),ncol=K)
+        b = runif(K, -5, 5)
+        x <- c(p[1:(K-1)],as.double(β),b)
 
-				# Test functions values
-				expect_equal( op$f(x), naive_f(link,M1,M2,M3, p,β,b) )
+        # Test functions values
+        expect_equal( op$f(x), naive_f(link,M1,M2,M3, p,β,b) )
 
-				# Test finite differences ~= gradient values
-				dir_h <- rep(0, (2+d)*K-1)
-				dir_h[var] = h
+        # Test finite differences ~= gradient values
+        dir_h <- rep(0, (2+d)*K-1)
+        dir_h[var] = h
 
-				expect_equal( op$grad_f(x)[var], ( op$f(x+dir_h) - op$f(x) ) / h, tol )
-			}
-		}
-	}
+        expect_equal( op$grad_f(x)[var], ( op$f(x+dir_h) - op$f(x) ) / h, tol )
+      }
+    }
+  }
 })

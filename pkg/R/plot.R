@@ -6,10 +6,10 @@
 #
 extractParam <- function(mr, x=1, y=1)
 {
-	# Obtain L vectors where L = number of res lists in mr
-	lapply( mr, function(mr_list) {
-		sapply(mr_list, function(m) m[x,y])
-	} )
+  # Obtain L vectors where L = number of res lists in mr
+  lapply( mr, function(mr_list) {
+    sapply(mr_list, function(m) m[x,y])
+  } )
 }
 
 #' plotHist
@@ -31,12 +31,12 @@ extractParam <- function(mr, x=1, y=1)
 #' @export
 plotHist <- function(mr, x, y)
 {
-	params <- extractParam(mr, x, y)
-	L = length(params)
-	# Plot histograms side by side
-	par(mfrow=c(1,L), cex.axis=1.5, cex.lab=1.5, mar=c(4.7,5,1,1))
-	for (i in 1:L)
-		hist(params[[i]], breaks=40, freq=FALSE, xlab="Parameter value", ylab="Density")
+  params <- extractParam(mr, x, y)
+  L = length(params)
+  # Plot histograms side by side
+  par(mfrow=c(1,L), cex.axis=1.5, cex.lab=1.5, mar=c(4.7,5,1,1))
+  for (i in 1:L)
+    hist(params[[i]], breaks=40, freq=FALSE, xlab="Parameter value", ylab="Density")
 }
 
 #' plotBox
@@ -50,12 +50,12 @@ plotHist <- function(mr, x, y)
 #' @export
 plotBox <- function(mr, x, y, xtitle="")
 {
-	params <- extractParam(mr, x, y)
-	L = length(params)
-	# Plot boxplots side by side
-	par(mfrow=c(1,L), cex.axis=1.5, cex.lab=1.5, mar=c(4.7,5,1,1))
-	for (i in 1:L)
-		boxplot(params[[i]], xlab=xtitle, ylab="Parameter value")
+  params <- extractParam(mr, x, y)
+  L = length(params)
+  # Plot boxplots side by side
+  par(mfrow=c(1,L), cex.axis=1.5, cex.lab=1.5, mar=c(4.7,5,1,1))
+  for (i in 1:L)
+    boxplot(params[[i]], xlab=xtitle, ylab="Parameter value")
 }
 
 #' plotCoefs
@@ -71,32 +71,32 @@ plotBox <- function(mr, x, y, xtitle="")
 #' @export
 plotCoefs <- function(mr, params, idx, xtitle="Parameter")
 {
-	L <- nrow(mr[[1]][[1]])
-	K <- ncol(mr[[1]][[1]])
+  L <- nrow(mr[[1]][[1]])
+  K <- ncol(mr[[1]][[1]])
 
-	params_hat <- matrix(nrow=L, ncol=K)
-	stdev <- matrix(nrow=L, ncol=K)
-	for (x in 1:L)
-	{
-		for (y in 1:K)
-		{
-			estims <- extractParam(mr, x, y)
-			params_hat[x,y] <- mean(estims[[idx]])
-#			stdev[x,y] <- sqrt( mean( (estims[[idx]] - params[x,y])^2 ) )
-			# HACK remove extreme quantile in estims[[i]] before computing sd()
-			stdev[x,y] <- sd( estims[[idx]] ) #[ estims[[idx]] < max(estims[[idx]]) & estims[[idx]] > min(estims[[idx]]) ] )
-		}
-	}
+  params_hat <- matrix(nrow=L, ncol=K)
+  stdev <- matrix(nrow=L, ncol=K)
+  for (x in 1:L)
+  {
+    for (y in 1:K)
+    {
+      estims <- extractParam(mr, x, y)
+      params_hat[x,y] <- mean(estims[[idx]])
+#      stdev[x,y] <- sqrt( mean( (estims[[idx]] - params[x,y])^2 ) )
+      # HACK remove extreme quantile in estims[[i]] before computing sd()
+      stdev[x,y] <- sd( estims[[idx]] ) #[ estims[[idx]] < max(estims[[idx]]) & estims[[idx]] > min(estims[[idx]]) ] )
+    }
+  }
 
-	par(cex.axis=1.5, cex.lab=1.5, mar=c(4.7,5,1,1))
-	params <- as.double(params)
-	o <- order(params)
-	avg_param <- as.double(params_hat)
-	std_param <- as.double(stdev)
-	matplot(cbind(params[o],avg_param[o],avg_param[o]+std_param[o],avg_param[o]-std_param[o]),
-		col=1, lty=c(1,5,3,3), type="l", lwd=2, xlab=xtitle, ylab="")
+  par(cex.axis=1.5, cex.lab=1.5, mar=c(4.7,5,1,1))
+  params <- as.double(params)
+  o <- order(params)
+  avg_param <- as.double(params_hat)
+  std_param <- as.double(stdev)
+  matplot(cbind(params[o],avg_param[o],avg_param[o]+std_param[o],avg_param[o]-std_param[o]),
+    col=1, lty=c(1,5,3,3), type="l", lwd=2, xlab=xtitle, ylab="")
 
-	#print(o) #not returning o to avoid weird Jupyter issue... (TODO:)
+  #print(o) #not returning o to avoid weird Jupyter issue... (TODO:)
 }
 
 #' plotQn
@@ -113,19 +113,19 @@ plotCoefs <- function(mr, params, idx, xtitle="Parameter")
 #' @export
 plotQn <- function(N, n, p, β, b, link)
 {
-	d <- nrow(β)
-	K <- ncol(β)
-	io <- generateSampleIO(n, p, β, b, link)
-	op <- optimParams(K, link, list(X=io$X, Y=io$Y))
-	# N random starting points gaussian (TODO: around true β?)
-	res <- matrix(nrow=d*K+1, ncol=N)
-	for (i in seq_len(N))
-	{
-		β_init <- rnorm(d*K)
-		par <- op$run( c(rep(1/K,K-1), β_init, rep(0,K)) )
-		par <- op$linArgs(par)
-		Qn <- op$f(par)
-		res[,i] = c(Qn, par[K:(K+d*K-1)])
-	}
-	res #TODO: plot this, not just return it...
+  d <- nrow(β)
+  K <- ncol(β)
+  io <- generateSampleIO(n, p, β, b, link)
+  op <- optimParams(K, link, list(X=io$X, Y=io$Y))
+  # N random starting points gaussian (TODO: around true β?)
+  res <- matrix(nrow=d*K+1, ncol=N)
+  for (i in seq_len(N))
+  {
+    β_init <- rnorm(d*K)
+    par <- op$run( c(rep(1/K,K-1), β_init, rep(0,K)) )
+    par <- op$linArgs(par)
+    Qn <- op$f(par)
+    res[,i] = c(Qn, par[K:(K+d*K-1)])
+  }
+  res #TODO: plot this, not just return it...
 }
