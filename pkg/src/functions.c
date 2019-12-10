@@ -54,19 +54,39 @@ void Moments_M3(double* X, double* Y, int* pn, int* pd, double* M3)
 	}
 }
 
+#include <stdio.h>
+
 // W = 1/N sum( t(g(Zi,theta)) g(Zi,theta) )
 // with g(Zi, theta) = i-th contribution to all moments (size dim) - real moments
 void Compute_Omega(double* X, double* Y, double* M, int* pn, int* pd, double* W)
 {
 	int n=*pn, d=*pd;
   int dim = d + d*d + d*d*d;
+
+//printf("X: \n");
+//for (int kk=0; kk<d*n; kk++) printf("%f ",X[kk]);
+//printf("\n");
+//printf("Y: \n");
+//for (int kk=0; kk<n; kk++) printf("%f ",Y[kk]);
+//printf("\n");
+//printf("M: \n");
+//for (int kk=0; kk<dim; kk++) printf("%f ",M[kk]);
+//printf("\n");
+
+  // (Re)Initialize W:
+  for (int j=0; j<dim; j++)
+  {
+    for (int k=0; k<dim; k++)
+      W[j*dim+k] = 0.0;
+  }
+
   //double* W = (double*)calloc(dim*dim,sizeof(double));
-  double* g = (double*)malloc(dim * sizeof(double));
+  double* g = (double*)malloc(dim*sizeof(double));
   for (int i=0; i<n; i++)
   {
     // Fill gi:
     for (int j=0; j<d; j++)
-      g[j] = Y[i] * X[mi(i,j,n,d)] - M[i];
+      g[j] = Y[i] * X[mi(i,j,n,d)] - M[j];
     for (int j=d; j<d+(d*d); j++)
     {
       int idx1 = (j-d) % d; //num row
@@ -74,7 +94,7 @@ void Compute_Omega(double* X, double* Y, double* M, int* pn, int* pd, double* W)
       g[j] = 0.0;
       if (idx1 == idx2)
         g[j] -= Y[i];
-			g[j] += Y[i] * X[mi(i,idx1,n,d)]*X[mi(i,idx2,n,d)] - M[i];
+			g[j] += Y[i] * X[mi(i,idx1,n,d)]*X[mi(i,idx2,n,d)] - M[j];
     }
     for (int j=d+d*d; j<dim; j++)
     {
@@ -88,8 +108,13 @@ void Compute_Omega(double* X, double* Y, double* M, int* pn, int* pd, double* W)
         g[j] -= Y[i] * X[mi(i,idx2,n,d)];
       if (idx2 == idx3)
         g[j] -= Y[i] * X[mi(i,idx1,n,d)];
-      g[j] += Y[i] * X[mi(i,idx1,n,d)]*X[mi(i,idx2,n,d)]*X[mi(i,idx3,n,d)] - M[i];
+      g[j] += Y[i] * X[mi(i,idx1,n,d)]*X[mi(i,idx2,n,d)]*X[mi(i,idx3,n,d)] - M[j];
     }
+
+//printf("i=%i, g=: \n", i);
+//for (int kk=0; kk<d; kk++) printf("%f ",g[kk]);
+//printf("\n");
+
     // Add 1/n t(gi) %*% gi to W
     for (int j=0; j<dim; j++)
     {
@@ -98,4 +123,11 @@ void Compute_Omega(double* X, double* Y, double* M, int* pn, int* pd, double* W)
     }
   }
   free(g);
+
+//  for (int j=0; j<dim; j++)
+//  {
+//    printf("\n");
+//    for (int k=0; k<dim; k++)
+//      printf("%f ",W[j*dim+k]);
+//  }
 }

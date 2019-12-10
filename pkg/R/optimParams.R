@@ -117,11 +117,12 @@ setRefClass(
 
     computeW = function(θ)
     {
-      dim <- d + d^2 + d^3
-      W <<- solve( matrix( .C("Compute_Omega",
+      #require(MASS)
+      dd <- d + d^2 + d^3
+      W <<- MASS::ginv( matrix( .C("Compute_Omega",
         X=as.double(X), Y=as.double(Y), M=as.double(Moments(θ)),
         pn=as.integer(n), pd=as.integer(d),
-        W=as.double(W), PACKAGE="morpheus")$W, nrow=dim, ncol=dim) )
+        W=as.double(W), PACKAGE="morpheus")$W, nrow=dd, ncol=dd ) )
       NULL #avoid returning W
     },
 
@@ -251,18 +252,21 @@ setRefClass(
       else if (any(is.na(θ0$b)))
         stop("θ0$b cannot have missing values")
 
-			op_res = constrOptim( linArgs(θ0), .self$f, .self$grad_f,
-				ui=cbind(
-					rbind( rep(-1,K-1), diag(K-1) ),
-					matrix(0, nrow=K, ncol=(d+1)*K) ),
-				ci=c(-1,rep(0,K-1)) )
+      # TODO: stopping condition? N iterations? Delta <= epsilon ?
+      for (loop in 1:10)
+      {
+        op_res = constrOptim( linArgs(θ0), .self$f, .self$grad_f,
+          ui=cbind(
+            rbind( rep(-1,K-1), diag(K-1) ),
+            matrix(0, nrow=K, ncol=(d+1)*K) ),
+          ci=c(-1,rep(0,K-1)) )
 
-      # debug:
-      computeW(expArgs(op_res$par))
-      print(W)
-      # We get a first non-trivial estimation of W
-      # TODO: loop, this redefine f, so that we can call constrOptim again...
-      # Stopping condition? N iterations? Delta <= epsilon ?
+        computeW(expArgs(op_res$par))
+        # debug:
+        #print(W)
+        print(op_res$value)
+        print(expArgs(op_res$par))
+      }
 
 			expArgs(op_res$par)
 		}
