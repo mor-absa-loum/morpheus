@@ -120,8 +120,7 @@ setRefClass(
       #require(MASS)
       dd <- d + d^2 + d^3
       W <<- MASS::ginv( matrix( .C("Compute_Omega",
-        X=as.double(X), Y=as.double(Y), M=as.double(Moments(θ)),
-        pn=as.integer(n), pd=as.integer(d),
+        X=as.double(X), Y=Y, M=Moments(θ), pn=as.integer(n), pd=as.integer(d),
         W=as.double(W), PACKAGE="morpheus")$W, nrow=dd, ncol=dd ) )
       NULL #avoid returning W
     },
@@ -147,10 +146,10 @@ setRefClass(
 
     f = function(θ)
     {
-			"Product t(Mi - hat_Mi) W (Mi - hat_Mi) with Mi(theta)"
+			"Product t(hat_Mi - Mi) W (hat_Mi - Mi) with Mi(theta)"
 
       L <- expArgs(θ)
-			A <- as.matrix(Moments(L) - Mhat)
+			A <- as.matrix(Mhat - Moments(L))
       t(A) %*% W %*% A
     },
 
@@ -187,13 +186,11 @@ setRefClass(
 
       # Gradient on p: K-1 columns, dim rows
 			km1 = 1:(K-1)
-
 			res <- cbind(res, rbind(
         sweep(as.matrix(β [,km1]), 2, G1[km1], '*') - G1[K] * β [,K],
         sweep(as.matrix(β2[,km1]), 2, G2[km1], '*') - G2[K] * β2[,K],
         sweep(as.matrix(β3[,km1]), 2, G3[km1], '*') - G3[K] * β3[,K] ))
 
-      # TODO: understand derivatives order and match the one in optim init param
 			for (i in 1:d)
 			{
 				# i determines the derivated matrix dβ[2,3]
