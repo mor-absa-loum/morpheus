@@ -115,13 +115,21 @@ setRefClass(
       c(L$p[1:(K-1)], as.double(L$β), L$b)
     },
 
+    #TODO: compare with R version?
+    #D <- diag(d) #matrix of ej vectors
+    #Y * X
+    #Y * ( t( apply(X, 1, function(row) row %o% row) ) - Reduce('+', lapply(1:d, function(j) as.double(D[j,] %o% D[j,])), rep(0, d*d)))
+    #Y * ( t( apply(X, 1, function(row) row %o% row %*% row) ) - Reduce('+', lapply(1:d, function(j) ), rep(0, d*d*d)))
     computeW = function(θ)
     {
       #require(MASS)
       dd <- d + d^2 + d^3
-      W <<- MASS::ginv( matrix( .C("Compute_Omega",
-        X=as.double(X), Y=Y, M=Moments(θ), pn=as.integer(n), pd=as.integer(d),
-        W=as.double(W), PACKAGE="morpheus")$W, nrow=dd, ncol=dd ) )
+      M <- Moments(θ)
+      Omega <- matrix( .C("Compute_Omega",
+        X=as.double(X), Y=as.double(Y), M=as.double(M),
+        pn=as.integer(n), pd=as.integer(d),
+        W=as.double(W), PACKAGE="morpheus")$W, nrow=dd, ncol=dd )
+      W <<- MASS::ginv(Omega, tol=1e-4)
       NULL #avoid returning W
     },
 
@@ -248,7 +256,6 @@ setRefClass(
         θ0$b = rep(0, K)
       else if (any(is.na(θ0$b)))
         stop("θ0$b cannot have missing values")
-
       # TODO: stopping condition? N iterations? Delta <= epsilon ?
       for (loop in 1:10)
       {
