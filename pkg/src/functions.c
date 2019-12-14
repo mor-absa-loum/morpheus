@@ -99,8 +99,6 @@ void Compute_Omega(double* X, double* Y, double* M, int* pn, int* pd, double* W)
         g[j] -= Y[i] * X[mi(i,idx1,n,d)];
       g[j] += Y[i] * X[mi(i,idx1,n,d)]*X[mi(i,idx2,n,d)]*X[mi(i,idx3,n,d)] - M[j];
     }
-
-    // TODO: 1/n des gj empirique doit tendre vers 0
     // Add 1/n t(gi) %*% gi to W
     for (int j=0; j<dim; j++)
     {

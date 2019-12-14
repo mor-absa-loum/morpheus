@@ -23,7 +23,7 @@
 #' # Bootstrap + computeMu, morpheus VS flexmix ; assumes fargs first 3 elts X,Y,K
 #' io <- generateSampleIO(n=1000, p=1/2, β=β, b=c(0,0), "logit")
 #' μ <- normalize(β)
-#' res <- multiRun(list(X=io$X,Y=io$Y,optargs=list(K=2,jd_nvects=0)), list(
+#' res <- multiRun(list(X=io$X,Y=io$Y,optargs=list(K=2)), list(
 #'   # morpheus
 #'   function(fargs) {
 #'     library(morpheus)

@@ -85,3 +85,131 @@ test_that("naive computation provides the same result as vectorized computations
     }
   }
 })
+
+# TODO: test computeW
+#    computeW = function(θ)
+#    {
+#      require(MASS)
+#      dd <- d + d^2 + d^3
+#      M <- Moments(θ)
+#      Id <- as.double(diag(d))
+#      E <- diag(d)
+#      v1 <- Y * X
+#      v2 <- Y * t( apply(X, 1, function(Xi) Xi %o% Xi - Id) )
+#      v3 <- Y * t( apply(X, 1, function(Xi) { return (Xi %o% Xi %o% Xi
+#        - Reduce('+', lapply(1:d, function(j) as.double(Xi %o% E[j,] %o% E[j,])), rep(0, d*d*d))
+#        - Reduce('+', lapply(1:d, function(j) as.double(E[j,] %o% Xi %o% E[j,])), rep(0, d*d*d))
+#        - Reduce('+', lapply(1:d, function(j) as.double(E[j,] %o% E[j,] %o% Xi)), rep(0, d*d*d))) } ) )
+#      Wtmp <- matrix(0, nrow=dd, ncol=dd)
+#      
+#
+#g <- matrix(nrow=n, ncol=dd); for (i in 1:n) g[i,] = c(v1[i,], v2[i,], v3[i,]) - M
+#
+#
+#
+#
+#
+#
+#  p <- θ$p
+#  β <- θ$β
+#  b <- θ$b
+#
+#
+#
+#
+##  # Random generation of the size of each population in X~Y (unordered)
+##  classes <- rmultinom(1, n, p)
+##
+##  #d <- nrow(β)
+##  zero_mean <- rep(0,d)
+##  id_sigma <- diag(rep(1,d))
+##  X <- matrix(nrow=0, ncol=d)
+##  Y <- c()
+##  for (i in 1:ncol(β)) #K = ncol(β)
+##  {
+##    newXblock <- MASS::mvrnorm(classes[i], zero_mean, id_sigma)
+##    arg_link <- newXblock %*% β[,i] + b[i]
+##    probas <-
+##      if (li == "logit")
+##      {
+##        e_arg_link = exp(arg_link)
+##        e_arg_link / (1 + e_arg_link)
+##      }
+##      else #"probit"
+##        pnorm(arg_link)
+##    probas[is.nan(probas)] <- 1 #overflow of exp(x)
+##    X <- rbind(X, newXblock)
+##    Y <- c( Y, vapply(probas, function(p) (rbinom(1,1,p)), 1) )
+##  }
+#
+#
+#
+#
+#
+#
+#
+#
+#  Mhatt <- c(
+#    colMeans(Y * X),
+#    colMeans(Y * t( apply(X, 1, function(Xi) Xi %o% Xi - Id) )),
+#    colMeans(Y * t( apply(X, 1, function(Xi) { return (Xi %o% Xi %o% Xi
+#      - Reduce('+', lapply(1:d, function(j) as.double(Xi %o% E[j,] %o% E[j,])), rep(0, d*d*d))
+#      - Reduce('+', lapply(1:d, function(j) as.double(E[j,] %o% Xi %o% E[j,])), rep(0, d*d*d))
+#      - Reduce('+', lapply(1:d, function(j) as.double(E[j,] %o% E[j,] %o% Xi)), rep(0, d*d*d))) } ) ) ))
+#  λ <- sqrt(colSums(β^2))
+#  β2 <- apply(β, 2, function(col) col %o% col)
+#  β3 <- apply(β, 2, function(col) col %o% col %o% col)
+#  M <- c(
+#    β  %*% (p * .G(li,1,λ,b)),
+#    β2 %*% (p * .G(li,2,λ,b)),
+#    β3 %*% (p * .G(li,3,λ,b)) )
+#  print(sum(abs(Mhatt - M)))
+#
+#save(list=c("X", "Y"), file="v2.RData")
+#
+#
+#
+#
+#browser()
+#      for (i in 1:n)
+#      {
+#        gi <- t(as.matrix(c(v1[i,], v2[i,], v3[i,]) - M))
+#        Wtmp <- Wtmp + t(gi) %*% gi / n
+#      }
+#      Wtmp
+#      #MASS::ginv(Wtmp)
+#    },
+#
+#    #TODO: compare with R version?
+#    computeW_orig = function(θ)
+#    {
+#      require(MASS)
+#      dd <- d + d^2 + d^3
+#      M <- Moments(θ)
+#      Omega <- matrix( .C("Compute_Omega",
+#        X=as.double(X), Y=as.double(Y), M=as.double(M),
+#        pn=as.integer(n), pd=as.integer(d),
+#        W=as.double(W), PACKAGE="morpheus")$W, nrow=dd, ncol=dd )
+#      Omega
+#      #MASS::ginv(Omega) #, tol=1e-4)
+#    },
+#
+#    Moments = function(θ)
+#    {
+#      "Vector of moments, of size d+d^2+d^3"
+#
+#      p <- θ$p
+#      β <- θ$β
+#      λ <- sqrt(colSums(β^2))
+#      b <- θ$b
+#
+#      # Tensorial products β^2 = β2 and β^3 = β3 must be computed from current β1
+#      β2 <- apply(β, 2, function(col) col %o% col)
+#      β3 <- apply(β, 2, function(col) col %o% col %o% col)
+#
+#      c(
+#        β  %*% (p * .G(li,1,λ,b)),
+#        β2 %*% (p * .G(li,2,λ,b)),
+#        β3 %*% (p * .G(li,3,λ,b)))
+#    },
+#

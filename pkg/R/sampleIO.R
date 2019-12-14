@@ -5,7 +5,7 @@
 #' described by the corresponding column parameter in the matrix β + intercept b.
 #'
 #' @param n Number of individuals
-#' @param p Vector of K-1 populations relative proportions (sum <= 1)
+#' @param p Vector of K(-1) populations relative proportions (sum (<)= 1)
 #' @param β Vectors of model parameters for each population, of size dxK
 #' @param b Vector of intercept values (use rep(0,K) for no intercept)
 #' @param link Link type; "logit" or "probit"
@@ -28,31 +28,29 @@ generateSampleIO = function(n, p, β, b, link)
     stop("n: positive integer")
   if (!is.matrix(β) || !is.numeric(β) || any(is.na(β)))
     stop("β: real matrix, no NAs")
-  K = ncol(β)
-  if (!is.numeric(p) || length(p)!=K-1 || any(is.na(p)) || any(p<0) || sum(p) > 1)
-    stop("p: positive vector of size K-1, no NA, sum<=1")
-  p <- c(p, 1-sum(p))
+  K <- ncol(β)
+  if (!is.numeric(p) || length(p)<K-1 || any(is.na(p)) || any(p<0) || sum(p) > 1)
+    stop("p: positive vector of size >= K-1, no NA, sum(<)=1")
+  if (length(p) == K-1)
+    p <- c(p, 1-sum(p))
   if (!is.numeric(b) || length(b)!=K || any(is.na(b)))
     stop("b: real vector of size K, no NA")
 
-  #random generation of the size of each population in X~Y (unordered)
-  classes = rmultinom(1, n, p)
+  # Random generation of the size of each population in X~Y (unordered)
+  classes <- rmultinom(1, n, p)
 
-  d = nrow(β)
-  zero_mean = rep(0,d)
-  id_sigma = diag(rep(1,d))
-  # Always consider an intercept (use b=0 for none)
-  d = d + 1
-  β = rbind(β, b)
-  X = matrix(nrow=0, ncol=d)
-  Y = c()
-  index = c()
-  for (i in 1:ncol(β))
+  d <- nrow(β)
+  zero_mean <- rep(0,d)
+  id_sigma <- diag(rep(1,d))
+  X <- matrix(nrow=0, ncol=d)
+  Y <- c()
+  index <- c()
+  for (i in 1:K)
   {
-    index = c(index, rep(i, classes[i]))
-    newXblock = cbind( MASS::mvrnorm(classes[i], zero_mean, id_sigma), 1 )
-    arg_link = newXblock %*% β[,i] #β
-    probas =
+    index <- c(index, rep(i, classes[i]))
+    newXblock <- MASS::mvrnorm(classes[i], zero_mean, id_sigma)
+    arg_link <- newXblock %*% β[,i] + b[i]
+    probas <-
       if (link == "logit")
       {
         e_arg_link = exp(arg_link)
@@ -61,13 +59,9 @@ generateSampleIO = function(n, p, β, b, link)
       else #"probit"
         pnorm(arg_link)
     probas[is.nan(probas)] = 1 #overflow of exp(x)
-    #probas = rowSums(p * probas)
-    X = rbind(X, newXblock)
-    #Y = c( Y, vapply(probas, function(p) (ifelse(p >= .5, 1, 0)), 1) )
-    Y = c( Y, vapply(probas, function(p) (rbinom(1,1,p)), 1) )
+    X <- rbind(X, newXblock)
+    Y <- c( Y, vapply(probas, function(p) (rbinom(1,1,p)), 1) )
   }
-  shuffle = sample(n)
-  # Returned X should not contain an intercept column (it's an argument of estimation
-  # methods)
-  list("X"=X[shuffle,-d], "Y"=Y[shuffle], "index"=index[shuffle])
+  shuffle <- sample(n)
+  list("X"=X[shuffle,], "Y"=Y[shuffle], "index"=index[shuffle])
 }

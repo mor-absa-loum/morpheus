@@ -66,9 +66,8 @@ computeMu = function(X, Y, optargs=list())
   jd_method = ifelse(!is.null(optargs$jd_method), optargs$jd_method, "uwedge")
   V =
     if (jd_nvects > 1) {
-      #NOTE: increasing itermax does not help to converge, thus we suppress warnings
+      # NOTE: increasing itermax does not help to converge, thus we suppress warnings
       suppressWarnings({jd = jointDiag::ajd(M2_t, method=jd_method)})
-#      if (jd_method=="uwedge") jd$B else solve(jd$A)
       if (jd_method=="uwedge") jd$B else MASS::ginv(jd$A)
     }
     else
@@ -79,7 +78,6 @@ computeMu = function(X, Y, optargs=list())
   for (i in seq_len(K))
     M2_t[,,i] = .T_I_I_w(M[[3]],V[,i])
   suppressWarnings({jd = jointDiag::ajd(M2_t, method=jd_method)})
-#  U = if (jd_method=="uwedge") solve(jd$B) else jd$A
   U = if (jd_method=="uwedge") MASS::ginv(jd$B) else jd$A
   μ = normalize(U[,1:K])
 

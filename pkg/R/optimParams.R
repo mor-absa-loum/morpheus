@@ -115,22 +115,17 @@ setRefClass(
       c(L$p[1:(K-1)], as.double(L$β), L$b)
     },
 
-    #TODO: compare with R version?
-    #D <- diag(d) #matrix of ej vectors
-    #Y * X
-    #Y * ( t( apply(X, 1, function(row) row %o% row) ) - Reduce('+', lapply(1:d, function(j) as.double(D[j,] %o% D[j,])), rep(0, d*d)))
-    #Y * ( t( apply(X, 1, function(row) row %o% row %*% row) ) - Reduce('+', lapply(1:d, function(j) ), rep(0, d*d*d)))
     computeW = function(θ)
     {
-      #require(MASS)
+      #return (diag(c(rep(6,d), rep(3, d^2), rep(1,d^3))))
+      require(MASS)
       dd <- d + d^2 + d^3
       M <- Moments(θ)
       Omega <- matrix( .C("Compute_Omega",
         X=as.double(X), Y=as.double(Y), M=as.double(M),
         pn=as.integer(n), pd=as.integer(d),
         W=as.double(W), PACKAGE="morpheus")$W, nrow=dd, ncol=dd )
-      W <<- MASS::ginv(Omega, tol=1e-4)
-      NULL #avoid returning W
+      MASS::ginv(Omega)
     },
 
     Moments = function(θ)
@@ -166,7 +161,7 @@ setRefClass(
       "Gradient of f, dimension (K-1) + d*K + K = (d+2)*K - 1"
 
       L <- expArgs(θ)
-      -2 * t(grad_M(L)) %*% W %*% as.matrix((Mhat - Moments(L)))
+      -2 * t(grad_M(L)) %*% W %*% as.matrix(Mhat - Moments(L))
     },
 
     grad_M = function(θ)
@@ -245,17 +240,22 @@ setRefClass(
         stop("θ0: list")
       if (is.null(θ0$β))
         stop("At least θ0$β must be provided")
-      if (!is.matrix(θ0$β) || any(is.na(θ0$β)) || ncol(θ0$β) != K)
-        stop("θ0$β: matrix, no NA, ncol == K")
+      if (!is.matrix(θ0$β) || any(is.na(θ0$β))
+        || nrow(θ0$β) != d || ncol(θ0$β) != K)
+      {
+        stop("θ0$β: matrix, no NA, nrow = d, ncol = K")
+      }
       if (is.null(θ0$p))
         θ0$p = rep(1/K, K-1)
-      else if (length(θ0$p) != K-1 || sum(θ0$p) > 1)
-        stop("θ0$p should contain positive integers and sum to < 1")
-      # Next test = heuristic to detect missing b (when matrix is called "beta")
-      if (is.null(θ0$b) || all(θ0$b == θ0$β))
+      else if (!is.numeric(θ0$p) || length(θ0$p) != K-1
+        || any(is.na(θ0$p)) || sum(θ0$p) > 1)
+      {
+        stop("θ0$p: length K-1, no NA, positive integers, sum to <= 1")
+      }
+      if (is.null(θ0$b))
         θ0$b = rep(0, K)
-      else if (any(is.na(θ0$b)))
-        stop("θ0$b cannot have missing values")
+      else if (!is.numeric(θ0$b) || length(θ0$b) != K || any(is.na(θ0$b)))
+        stop("θ0$b: length K, no NA")
       # TODO: stopping condition? N iterations? Delta <= epsilon ?
       for (loop in 1:10)
       {
@@ -264,12 +264,9 @@ setRefClass(
             rbind( rep(-1,K-1), diag(K-1) ),
             matrix(0, nrow=K, ncol=(d+1)*K) ),
           ci=c(-1,rep(0,K-1)) )
-
-        computeW(expArgs(op_res$par))
-        # debug:
-        #print(W)
-        print(op_res$value)
-        print(expArgs(op_res$par))
+        W <<- computeW(expArgs(op_res$par))
+        print(op_res$value) #debug
+        print(expArgs(op_res$par)) #debug
       }
 
       expArgs(op_res$par)
