@@ -257,14 +257,16 @@ setRefClass(
       else if (!is.numeric(θ0$b) || length(θ0$b) != K || any(is.na(θ0$b)))
         stop("θ0$b: length K, no NA")
       # TODO: stopping condition? N iterations? Delta <= epsilon ?
-      for (loop in 1:2)
+      loopMax <- 2
+      for (loop in 1:loopMax)
       {
         op_res = constrOptim( linArgs(θ0), .self$f, .self$grad_f,
           ui=cbind(
             rbind( rep(-1,K-1), diag(K-1) ),
             matrix(0, nrow=K, ncol=(d+1)*K) ),
           ci=c(-1,rep(0,K-1)) )
-        W <<- computeW(expArgs(op_res$par))
+        if (loop < loopMax) #avoid computing an extra W
+          W <<- computeW(expArgs(op_res$par))
         print(op_res$value) #debug
         print(expArgs(op_res$par)) #debug
       }
