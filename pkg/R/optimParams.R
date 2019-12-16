@@ -122,7 +122,7 @@ setRefClass(
       dd <- d + d^2 + d^3
       M <- Moments(θ)
       Omega <- matrix( .C("Compute_Omega",
-        X=as.double(X), Y=as.double(Y), M=as.double(M),
+        X=as.double(X), Y=as.integer(Y), M=as.double(M),
         pn=as.integer(n), pd=as.integer(d),
         W=as.double(W), PACKAGE="morpheus")$W, nrow=dd, ncol=dd )
       MASS::ginv(Omega)
@@ -257,7 +257,7 @@ setRefClass(
       else if (!is.numeric(θ0$b) || length(θ0$b) != K || any(is.na(θ0$b)))
         stop("θ0$b: length K, no NA")
       # TODO: stopping condition? N iterations? Delta <= epsilon ?
-      for (loop in 1:10)
+      for (loop in 1:2)
       {
         op_res = constrOptim( linArgs(θ0), .self$f, .self$grad_f,
           ui=cbind(
