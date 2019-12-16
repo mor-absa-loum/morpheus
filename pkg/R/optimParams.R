@@ -267,8 +267,8 @@ setRefClass(
           ci=c(-1,rep(0,K-1)) )
         if (loop < loopMax) #avoid computing an extra W
           W <<- computeW(expArgs(op_res$par))
-        print(op_res$value) #debug
-        print(expArgs(op_res$par)) #debug
+        #print(op_res$value) #debug
+        #print(expArgs(op_res$par)) #debug
       }
 
       expArgs(op_res$par)
