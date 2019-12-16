@@ -17,6 +17,6 @@ nc=50
 
 for d in 2 5 10; do
 	for link in "logit" "probit"; do
-		R --slave --args N=$N n=$n nc=$nc d=$d link=$link <accuracy.R >out_${n}_${link}_${d}_${weights} 2>&1
+		R --slave --args N=$N n=$n nc=$nc d=$d link=$link <accuracy.R >out_${n}_${link}_${d} 2>&1
 	done
 done
