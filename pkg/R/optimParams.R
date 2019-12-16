@@ -31,7 +31,7 @@
 #' o$f( o$linArgs(par0) )
 #' o$f( o$linArgs(par1) )
 #' @export
-optimParams <- function(X, Y, K, link=c("logit","probit"))
+optimParams <- function(X, Y, K, link=c("logit","probit"), M=NULL)
 {
   # Check arguments
   if (!is.matrix(X) || any(is.na(X)))
@@ -42,9 +42,19 @@ optimParams <- function(X, Y, K, link=c("logit","probit"))
   if (!is.numeric(K) || K!=floor(K) || K < 2)
     stop("K: integer >= 2")
 
+  if (is.null(M))
+  {
+    # Precompute empirical moments
+    Mtmp <- computeMoments(X, Y)
+    M1 <- as.double(Mtmp[[1]])
+    M2 <- as.double(Mtmp[[2]])
+    M3 <- as.double(Mtmp[[3]])
+    M <- c(M1, M2, M3)
+  }
+
   # Build and return optimization algorithm object
   methods::new("OptimParams", "li"=link, "X"=X,
-    "Y"=as.integer(Y), "K"=as.integer(K))
+    "Y"=as.integer(Y), "K"=as.integer(K), "Mhat"=as.double(M))
 }
 
 #' Encapsulated optimization for p (proportions), β and b (regression parameters)
@@ -82,18 +92,14 @@ setRefClass(
       "Check args and initialize K, d, W"
 
       callSuper(...)
-      if (!hasArg("X") || !hasArg("Y") || !hasArg("K") || !hasArg("li"))
+      if (!hasArg("X") || !hasArg("Y") || !hasArg("K")
+        || !hasArg("li") || !hasArg("Mhat"))
+      {
         stop("Missing arguments")
-
-      # Precompute empirical moments
-      M <- computeMoments(X, Y)
-      M1 <- as.double(M[[1]])
-      M2 <- as.double(M[[2]])
-      M3 <- as.double(M[[3]])
-      Mhat <<- c(M1, M2, M3)
+      }
 
       n <<- nrow(X)
-      d <<- length(M1)
+      d <<- ncol(X)
       W <<- diag(d+d^2+d^3) #initialize at W = Identity
     },
 
