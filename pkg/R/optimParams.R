@@ -51,6 +51,8 @@ optimParams <- function(X, Y, K, link=c("logit","probit"), M=NULL)
     M3 <- as.double(Mtmp[[3]])
     M <- c(M1, M2, M3)
   }
+  else
+    M <- c(M[[1]], M[[2]], M[[3]])
 
   # Build and return optimization algorithm object
   methods::new("OptimParams", "li"=link, "X"=X,
