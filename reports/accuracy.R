@@ -2,16 +2,14 @@ optimBeta <- function(N, n, K, p, beta, b, link, ncores)
 {
 	library(morpheus)
 	res <- multiRun(
-		list(n=n, p=p, beta=beta, b=b, optargs=list(K=K, link=link)),
+		list(n=n, p=p, beta=beta, b=b, K=K, link=link),
 		list(
 			# morpheus
 			function(fargs) {
 				library(morpheus)
-				K <- fargs$optargs$K
-				M <- computeMoments(fargs$X, fargs$Y)
-				fargs$optargs$M <- M
-				mu <- computeMu(fargs$X, fargs$Y, fargs$optargs)
-        op <- optimParams(K,fargs$optargs$link,fargs$optargs)
+				K <- fargs$K
+				mu <- computeMu(fargs$X, fargs$Y, list(K=K))
+        op <- optimParams(fargs$X, fargs$Y, K, fargs$link)
         x_init <- list(p=rep(1/K,K-1), beta=mu, b=rep(0,K))
 				res2 <- NULL
 				tryCatch({
@@ -24,7 +22,7 @@ optimBeta <- function(N, n, K, p, beta, b, link, ncores)
 #			function(fargs) {
 #				library(flexmix)
 #				source("../patch_Bettina/FLXMRglm.R")
-#				K <- fargs$optargs$K
+#				K <- fargs$K
 #				dat <- as.data.frame( cbind(fargs$Y,fargs$X) )
 #				res2 <- NULL
 #				tryCatch({
@@ -44,10 +42,9 @@ optimBeta <- function(N, n, K, p, beta, b, link, ncores)
 		),
 		prepareArgs = function(fargs, index) {
 			library(morpheus)
-			io = generateSampleIO(fargs$n, fargs$p, fargs$beta, fargs$b, fargs$optargs$link)
+			io = generateSampleIO(fargs$n, fargs$p, fargs$beta, fargs$b, fargs$link)
 			fargs$X = io$X
 			fargs$Y = io$Y
-			fargs$optargs$K = ncol(fargs$beta)
 			fargs
 		}, N=N, ncores=ncores, verbose=TRUE)
 	p <- c(p, 1-sum(p))
