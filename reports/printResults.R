@@ -19,7 +19,7 @@ pprms <- function(link)
       toprint <- c()
       for (d in c(2,5,10))
       {
-        name <- paste0("res_", n, "_", d, "_", link, "_6,3,1.RData")
+        name <- paste0("res_", n, "_", d, "_", link, ".RData")
         params <- prms(name, method)
         toprint <- c(toprint, c(
           sum(abs(params[[1]] - params[[4]]$p)),

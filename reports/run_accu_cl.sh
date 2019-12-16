@@ -1,14 +1,13 @@
 #!/bin/bash
 
-# Lancement: qsub -o .output -j y run_accu_cl.sh
-
 #$ -N morpheus
 #$ -wd /workdir2/auder/morpheus/reports
-#$ -m abes
-#$ -M benjamin@auder.net
-#$ -pe make 10
-#$ -l h_vmem=1G
+##$ -m abes
+##$ -M benjamin@auder.net
+#$ -pe make 50
 rm -f .output
+#$ -o .output
+#$ -j y
 
 module load R/3.6.1
 
