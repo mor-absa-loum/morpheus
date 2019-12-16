@@ -1,16 +1,10 @@
 #include <stdlib.h>
 
 // Index matrix (by columns)
-int inline mi(int i, int j, int d1, int d2)
-{
-  return j*d1 + i;
-}
+#define mi(i, j, d1, d2) (j*d1 + i)
 
 // Index 3-tensor (by columns, matrices ordered by last dim)
-int inline ti(int i, int j, int k, int d1, int d2, int d3)
-{
-  return k*d1*d2 + j*d1 + i;
-}
+#define ti(i, j, k, d1, d2, d3) (k*d1*d2 + j*d1 + i)
 
 // Empirical cross-moment of order 2 between X size nxd and Y size n
 void Moments_M2(double* X, double* Y, int* pn, int* pd, double* M2)
