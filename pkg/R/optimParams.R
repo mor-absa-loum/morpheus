@@ -104,7 +104,7 @@ setRefClass(
       list(
         # p: dimension K-1, need to be completed
         "p" = c(v[1:(K-1)], 1-sum(v[1:(K-1)])),
-        "β" = matrix(v[K:(K+d*K-1)], ncol=K),
+        "β" = t(matrix(v[K:(K+d*K-1)], ncol=d)),
         "b" = v[(K+d*K):(K+(d+1)*K-1)])
     },
 
@@ -112,12 +112,12 @@ setRefClass(
     {
       "Linearize vectors+matrices from list L into a vector"
 
-      c(L$p[1:(K-1)], as.double(L$β), L$b)
+      # β linearized row by row, to match derivatives order
+      c(L$p[1:(K-1)], as.double(t(L$β)), L$b)
     },
 
     computeW = function(θ)
     {
-      #return (diag(c(rep(6,d), rep(3, d^2), rep(1,d^3))))
       require(MASS)
       dd <- d + d^2 + d^3
       M <- Moments(θ)
