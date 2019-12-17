@@ -102,7 +102,7 @@ setRefClass(
 
       n <<- nrow(X)
       d <<- ncol(X)
-      W <<- diag(d+d^2+d^3) #initialize at W = Identity
+      # W will be initialized when calling run()
     },
 
     expArgs = function(v)
@@ -264,6 +264,10 @@ setRefClass(
         θ0$b = rep(0, K)
       else if (!is.numeric(θ0$b) || length(θ0$b) != K || any(is.na(θ0$b)))
         stop("θ0$b: length K, no NA")
+
+      # (Re)Set W to identity, to allow several run from the same object
+      W <<- diag(d+d^2+d^3)
+
       # TODO: stopping condition? N iterations? Delta <= epsilon ?
       loopMax <- 2
       for (loop in 1:loopMax)

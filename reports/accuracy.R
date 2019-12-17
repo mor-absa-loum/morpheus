@@ -1,13 +1,13 @@
-optimBeta <- function(N, n, K, p, beta, b, link, ncores)
+optimBeta <- function(N, n, p, beta, b, link, ncores)
 {
   library(morpheus)
   res <- multiRun(
-    list(n=n, p=p, beta=beta, b=b, K=K, link=link),
+    list(n=n, p=p, beta=beta, b=b, link=link),
     list(
       # morpheus
       function(fargs) {
         library(morpheus)
-        K <- fargs$K
+        K <- ncol(fargs$beta)
         M <- computeMoments(fargs$X, fargs$Y)
         mu <- computeMu(fargs$X, fargs$Y, list(K=K, M=M))
         op <- optimParams(fargs$X, fargs$Y, K, fargs$link, M)
@@ -23,7 +23,7 @@ optimBeta <- function(N, n, K, p, beta, b, link, ncores)
 #      function(fargs) {
 #        library(flexmix)
 #        source("../patch_Bettina/FLXMRglm.R")
-#        K <- fargs$K
+#        K <- ncol(fargs$beta)
 #        dat <- as.data.frame( cbind(fargs$Y,fargs$X) )
 #        res2 <- NULL
 #        tryCatch({
@@ -60,7 +60,7 @@ optimBeta <- function(N, n, K, p, beta, b, link, ncores)
   res
 }
 
-#model = binomial; default values:
+# Default values:
 link = "logit"
 N <- 10
 d <- 2
@@ -87,28 +87,20 @@ for (arg in cmd_args)
 }
 
 if (d == 2) {
-  K <- 2
   p <- .5
   b <- c(-.2, .5)
-  beta <- matrix( c(1,-2, 3,1), ncol=K )
+  beta <- matrix( c(1,-2, 3,1), ncol=2 )
 } else if (d == 5) {
-  K <- 2
   p <- .5
   b <- c(-.2, .5)
-  beta <- matrix( c(1,2,-1,0,3, 2,-3,0,1,0), ncol=K )
+  beta <- matrix( c(1,2,-1,0,3, 2,-3,0,1,0), ncol=2 )
 } else if (d == 10) {
-  K <- 3
   p <- c(.3, .3)
   b <- c(-.2, 0, .5)
-  beta <- matrix( c(1,2,-1,0,3,4,-1,-3,0,2, 2,-3,0,1,0,-1,-4,3,2,0, -1,1,3,-1,0,0,2,0,1,-2), ncol=K )
-} else if (d == 20) {
-  K <- 3
-  p <- c(.3, .3)
-  b <- c(-.2, 0, .5)
-  beta <- matrix( c(1,2,-1,0,3,4,-1,-3,0,2,2,-3,0,1,0,-1,-4,3,2,0, -1,1,3,-1,0,0,2,0,1,-2,1,2,-1,0,3,4,-1,-3,0,2, 2,-3,0,1,0,-1,-4,3,2,0,1,1,2,2,-2,-2,3,1,0,0), ncol=K )
+  beta <- matrix( c(1,2,-1,0,3,4,-1,-3,0,2, 2,-3,0,1,0,-1,-4,3,2,0, -1,1,3,-1,0,0,2,0,1,-2), ncol=3 )
 }
 
-mr <- optimBeta(N, n, K, p, beta, b, link, ncores)
+mr <- optimBeta(N, n, p, beta, b, link, ncores)
 mr_params <- list("N"=N, "nc"=ncores, "n"=n, "K"=K, "d"=d, "link"=link,
   "p"=c(p,1-sum(p)), "beta"=beta, "b"=b)
 

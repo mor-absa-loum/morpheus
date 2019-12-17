@@ -1,15 +1,15 @@
 library(morpheus)
 
-testMultistart <- function(N, n, d, K, p, beta, b, link, nstart, ncores)
+testMultistart <- function(N, n, p, beta, b, link, nstart, ncores)
 {
   res <- multiRun(
-    list(n=n,p=p,beta=beta,b=b,optargs=list(K=K,d=d,link=link,nstart=nstart)),
+    list(n=n, p=p, beta=beta, b=b, link=link, nstart=nstart),
     list(
       function(fargs) {
         # 1 start
         library(morpheus)
-        K <- fargs$optargs$K
-        op <- optimParams(K, fargs$optargs$link, fargs$optargs)
+        K <- ncol(fargs$beta)
+        op <- optimParams(fargs$X, fargs$Y, K, fargs$link, fargs$M)
         x_init <- list(p=rep(1/K,K-1), beta=fargs$mu, b=rep(0,K))
 				res2 <- NULL
 				tryCatch({
@@ -20,12 +20,12 @@ testMultistart <- function(N, n, d, K, p, beta, b, link, nstart, ncores)
       function(fargs) {
         # B starts
         library(morpheus)
-        K <- fargs$optargs$K
-				d <- fargs$optargs$d
-        op <- optimParams(K, fargs$optargs$link, fargs$optargs)
+        K <- ncol(fargs$beta)
+				d <- nrow(fargs$beta)
+        op <- optimParams(fargs$X, fargs$Y, K, fargs$link, fargs$M)
         best_val <- Inf
         best_par <- list()
-        for (i in 1:fargs$optargs$nstart)
+        for (i in 1:fargs$nstart)
         {
           #x_init <- list(p=rep(1/K,K-1), beta=i*fargs$mu, b=rep(0,K))
           M <- matrix(rnorm(d*K), nrow=d, ncol=K)
@@ -51,10 +51,12 @@ testMultistart <- function(N, n, d, K, p, beta, b, link, nstart, ncores)
     ),
     prepareArgs = function(fargs, index) {
       library(morpheus)
-      io = generateSampleIO(fargs$n, fargs$p, fargs$beta, fargs$b, fargs$optargs$link)
-      fargs$optargs$M <- computeMoments(io$X, io$Y)
-      mu <- computeMu(io$X, io$Y, fargs$optargs)
+      io = generateSampleIO(fargs$n, fargs$p, fargs$beta, fargs$b, fargs$link)
+      fargs$M <- computeMoments(io$X, io$Y)
+      mu <- computeMu(io$X, io$Y, list(M=fargs$M))
       fargs$mu <- mu
+      fargs$X <- io$X
+      fargs$Y <- io$Y
 			fargs
     }, N=N, ncores=ncores, verbose=TRUE)
   for (i in 1:2)
@@ -62,14 +64,9 @@ testMultistart <- function(N, n, d, K, p, beta, b, link, nstart, ncores)
   res
 }
 
-#model = binomial
-K <- 2
-p <- .5
-b <- c(-.2, .5)
 # Default values:
 link = "logit"
 N <- 10
-d <- 2
 n <- 1e4
 ncores <- 1
 nstart <- 3 #nstart-1 random starting points for each MC run
@@ -95,14 +92,23 @@ for (arg in cmd_args)
 		}
 	}
 }
-betas <- list(
-	matrix( c(1,-2, 3,1), ncol=K ), #d=2
-	matrix( c(1,2,-1,0,3, 2,-3,0,1,0), ncol=K ), #d=5
-	matrix( c(1,2,-1,0,3,4,-1,-3,0,2, 2,-3,0,1,0,-1,-4,3,2,0), ncol=K ) ) #d=10
-beta <- betas[[ ifelse( d==2, 1, ifelse(d==5,2,3) ) ]]
 
-mr <- testMultistart(N, n, d, K, p, beta, b, link, nstart, ncores)
-mr_params <- list("N"=N, "nc"=ncores, "n"=n, "K"=K, "d"=d, "link"=link,
+if (d == 2) {
+  p <- .5
+  b <- c(-.2, .5)
+  beta <- matrix( c(1,-2, 3,1), ncol=2 )
+} else if (d == 5) {
+  p <- .5
+  b <- c(-.2, .5)
+  beta <- matrix( c(1,2,-1,0,3, 2,-3,0,1,0), ncol=2 )
+} else if (d == 10) {
+  p <- c(.3, .3)
+  b <- c(-.2, 0, .5)
+  beta <- matrix( c(1,2,-1,0,3,4,-1,-3,0,2, 2,-3,0,1,0,-1,-4,3,2,0, -1,1,3,-1,0,0,2,0,1,-2), ncol=3 )
+}
+
+mr <- testMultistart(N, n, p, beta, b, link, nstart, ncores)
+mr_params <- list("N"=N, "nc"=ncores, "n"=n, "link"=link,
 	"p"=c(p,1-sum(p)), "beta"=beta, "b"=b, "nstart"=nstart)
 
 save("mr", "mr_params", file=paste("res_",n,"_",d,"_",link,"_",nstart,".RData",sep=""))
