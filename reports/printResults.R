@@ -13,9 +13,8 @@ pprms <- function(link)
 {
   for (n in c("5000", "10000", "100000", "500000", "1000000"))
   {
-    method  =1
-    #for (method in 1:2)
-    #{
+    for (method in 1:2)
+    {
       toprint <- c()
       for (d in c(2,5,10))
       {
@@ -28,6 +27,6 @@ pprms <- function(link)
         ))
       }
       print(toprint, digits=2)
-    #}
+    }
   }
 }

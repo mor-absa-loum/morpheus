@@ -17,29 +17,28 @@ optimBeta <- function(N, n, p, beta, b, link, ncores)
           res2 <- do.call(rbind, op$run(x_init))
         }, error = function(e) {})
         res2
+      },
+      # flexmix
+      function(fargs) {
+        library(flexmix)
+        source("../patch_Bettina/FLXMRglm.R")
+        K <- ncol(fargs$beta)
+        dat <- as.data.frame( cbind(fargs$Y,fargs$X) )
+        res2 <- NULL
+        tryCatch({
+          fm <- flexmix( cbind(V1, 1-V1) ~ .-V1, data=dat, k=K,
+            model = FLXMRglm(family = binomial(link = link)) )
+          p <- mean(fm@posterior[["scaled"]][,1])
+          out <- refit(fm)
+          beta_b <- sapply( seq_len(K), function(i) {
+            as.double( out@components[[1]][[i]][,1] )
+          } )
+          res2 <- rbind(p, beta_b[2:nrow(beta_b),], beta_b[1,])
+        }, error = function(e) {
+          res2 <- NA
+        })
+        res2
       }
-#      ,
-#      # flexmix
-#      function(fargs) {
-#        library(flexmix)
-#        source("../patch_Bettina/FLXMRglm.R")
-#        K <- ncol(fargs$beta)
-#        dat <- as.data.frame( cbind(fargs$Y,fargs$X) )
-#        res2 <- NULL
-#        tryCatch({
-#          fm <- flexmix( cbind(V1, 1-V1) ~ .-V1, data=dat, k=K,
-#            model = FLXMRglm(family = binomial(link = link)) )
-#          p <- mean(fm@posterior[["scaled"]][,1])
-#          out <- refit(fm)
-#          beta_b <- sapply( seq_len(K), function(i) {
-#            as.double( out@components[[1]][[i]][,1] )
-#          } )
-#          res2 <- rbind(p, beta_b[2:nrow(beta_b),], beta_b[1,])
-#        }, error = function(e) {
-#          res2 <- NA
-#        })
-#        res2
-#      }
     ),
     prepareArgs = function(fargs, index) {
       library(morpheus)
@@ -101,7 +100,7 @@ if (d == 2) {
 }
 
 mr <- optimBeta(N, n, p, beta, b, link, ncores)
-mr_params <- list("N"=N, "nc"=ncores, "n"=n, "K"=K, "d"=d, "link"=link,
+mr_params <- list("N"=N, "nc"=ncores, "n"=n, "link"=link,
   "p"=c(p,1-sum(p)), "beta"=beta, "b"=b)
 
 save("mr", "mr_params", file=paste("res_",n,"_",d,"_",link,".RData",sep=""))
