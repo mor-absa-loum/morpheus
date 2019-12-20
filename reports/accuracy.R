@@ -17,7 +17,8 @@ optimBeta <- function(N, n, p, beta, b, link, ncores)
           res2 <- do.call(rbind, op$run(x_init))
         }, error = function(e) {})
         res2
-      },
+      }
+			,
       # flexmix
       function(fargs) {
         library(flexmix)

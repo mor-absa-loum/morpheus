@@ -268,7 +268,7 @@ setRefClass(
       # (Re)Set W to identity, to allow several run from the same object
       W <<- diag(d+d^2+d^3)
 
-      loopMax <- 2 #TODO: loopMax = 3 ?
+      loopMax <- 2 #TODO: loopMax = 3 ? Seems not improving...
       for (loop in 1:loopMax)
       {
         op_res = constrOptim( linArgs(θ0), .self$f, .self$grad_f,
