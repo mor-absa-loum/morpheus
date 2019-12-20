@@ -9,8 +9,9 @@ testMultistart <- function(N, n, p, beta, b, link, nstart, ncores)
         # 1 start
         library(morpheus)
         K <- ncol(fargs$beta)
+        mu <- computeMu(io$X, io$Y, list(K=K, M=fargs$M))
         op <- optimParams(fargs$X, fargs$Y, K, fargs$link, fargs$M)
-        x_init <- list(p=rep(1/K,K-1), beta=fargs$mu, b=rep(0,K))
+        x_init <- list(p=rep(1/K,K-1), beta=mu, b=rep(0,K))
 				res2 <- NULL
 				tryCatch({
           res2 <- do.call(rbind, op$run(x_init))
@@ -52,8 +53,6 @@ testMultistart <- function(N, n, p, beta, b, link, nstart, ncores)
       library(morpheus)
       io = generateSampleIO(fargs$n, fargs$p, fargs$beta, fargs$b, fargs$link)
       fargs$M <- computeMoments(io$X, io$Y)
-      mu <- computeMu(io$X, io$Y, list(M=fargs$M))
-      fargs$mu <- mu
       fargs$X <- io$X
       fargs$Y <- io$Y
 			fargs
