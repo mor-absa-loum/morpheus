@@ -29,12 +29,12 @@ optimBeta <- function(N, n, p, beta, b, link, ncores)
         tryCatch({
           fm <- flexmix( cbind(V1, 1-V1) ~ .-V1, data=dat, k=K,
             model = FLXMRglm(family = binomial(link = link)) )
-          p <- mean(fm@posterior[["scaled"]][,1])
+          pf <- mean(fm@posterior[["scaled"]][,1])
           out <- refit(fm)
           beta_b <- sapply( seq_len(K), function(i) {
             as.double( out@components[[1]][[i]][,1] )
           } )
-          res2 <- rbind(p, beta_b[2:nrow(beta_b),], beta_b[1,])
+          res2 <- rbind(pf, beta_b[2:nrow(beta_b),], beta_b[1,])
         }, error = function(e) {
           res2 <- NA
         })

@@ -45,8 +45,7 @@ testMultistart <- function(N, n, p, beta, b, link, nstart, ncores)
             }
           }
         }
-        # Bet that at least one run succeded:
-        do.call(rbind,best_par)
+        do.call(rbind,best_par) #return NULL on empty list
       }
     ),
     prepareArgs = function(fargs, index) {
@@ -59,8 +58,15 @@ testMultistart <- function(N, n, p, beta, b, link, nstart, ncores)
       fargs$Y <- io$Y
 			fargs
     }, N=N, ncores=ncores, verbose=TRUE)
-  for (i in 1:2)
+  p <- c(p, 1-sum(p))
+  for (i in 1:length(res)) {
+    for (j in N:1) {
+      if (is.null(res[[i]][[j]]) || is.na(res[[i]][[j]]))
+        res[[i]][[j]] <- NULL
+    }
+    print(paste("Count valid runs for ",i," = ",length(res[[i]]),sep=""))
     res[[i]] <- alignMatrices(res[[i]], ref=rbind(p,beta,b), ls_mode="exact")
+  }
   res
 }
 
