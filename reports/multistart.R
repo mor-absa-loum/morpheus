@@ -9,7 +9,7 @@ testMultistart <- function(N, n, p, beta, b, link, nstart, ncores)
         # 1 start
         library(morpheus)
         K <- ncol(fargs$beta)
-        mu <- computeMu(io$X, io$Y, list(K=K, M=fargs$M))
+        mu <- computeMu(fargs$X, fargs$Y, list(K=K, M=fargs$M))
         op <- optimParams(fargs$X, fargs$Y, K, fargs$link, fargs$M)
         x_init <- list(p=rep(1/K,K-1), beta=mu, b=rep(0,K))
 				res2 <- NULL
