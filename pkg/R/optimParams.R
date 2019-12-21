@@ -279,9 +279,7 @@ setRefClass(
           ci=c(-1,rep(0,K-1)) )
         if (loop < loopMax) #avoid computing an extra W
           W <<- computeW(expArgs(op_res$par))
-        x_init <- op_res$par
-        #print(op_res$value) #debug
-        #print(expArgs(op_res$par)) #debug
+        #x_init <- op_res$par #degrades performances (TODO: why?)
       }
 
       expArgs(op_res$par)
