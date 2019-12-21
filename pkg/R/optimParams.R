@@ -269,15 +269,17 @@ setRefClass(
       W <<- diag(d+d^2+d^3)
 
       loopMax <- 2 #TODO: loopMax = 3 ? Seems not improving...
+      x_init <- linArgs(θ0)
       for (loop in 1:loopMax)
       {
-        op_res = constrOptim( linArgs(θ0), .self$f, .self$grad_f,
+        op_res = constrOptim( x_init, .self$f, .self$grad_f,
           ui=cbind(
             rbind( rep(-1,K-1), diag(K-1) ),
             matrix(0, nrow=K, ncol=(d+1)*K) ),
           ci=c(-1,rep(0,K-1)) )
         if (loop < loopMax) #avoid computing an extra W
           W <<- computeW(expArgs(op_res$par))
+        x_init <- op_res$par
         #print(op_res$value) #debug
         #print(expArgs(op_res$par)) #debug
       }
