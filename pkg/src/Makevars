@@ -1,0 +1,9 @@
+# Override R weird defaults:
+# https://stackoverflow.com/questions/23414448/r-makevars-file-to-overwrite-r-cmds-default-g-options
+
+%.o: %.c
+	gcc -I/usr/include/R -I/usr/local/include/R -DNDEBUG -fpic -O2 -c $< -o $@
+
+# On u-psud cluster:
+#%.o: %.c
+#	gcc -I"/usr/local/R/3.6.1/lib64/R/include" -I/usr/local/include -DNDEBUG -fpic -O2 -c $< -o $@

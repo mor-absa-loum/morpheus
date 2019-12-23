@@ -1,13 +1,14 @@
 #' multiRun
 #'
-#' Estimate N times some parameters, outputs of some list of functions. This method is
-#' thus very generic, allowing typically bootstrap or Monte-Carlo estimations of matrices
-#' μ or β. Passing a list of functions opens the possibility to compare them on a fair
-#' basis (exact same inputs). It's even possible to compare methods on some deterministic
-#' design of experiments.
+#' Estimate N times some parameters, outputs of some list of functions.
+#' This method is thus very generic, allowing typically bootstrap or
+#' Monte-Carlo estimations of matrices μ or β.
+#' Passing a list of functions opens the possibility to compare them on a fair
+#' basis (exact same inputs). It's even possible to compare methods on some
+#' deterministic design of experiments.
 #'
 #' @param fargs List of arguments for the estimation functions
-#' @param estimParams List of nf function(s) to apply on fargs - shared signature
+#' @param estimParams List of nf function(s) to apply on fargs
 #' @param prepareArgs Prepare arguments for the functions inside estimParams
 #' @param N Number of runs
 #' @param ncores Number of cores for parallel runs (<=1: sequential)
@@ -20,21 +21,21 @@
 #' \donttest{
 #' β <- matrix(c(1,-2,3,1),ncol=2)
 #'
-#' # Bootstrap + computeMu, morpheus VS flexmix ; assumes fargs first 3 elts X,Y,K
+#' # Bootstrap + computeMu, morpheus VS flexmix
 #' io <- generateSampleIO(n=1000, p=1/2, β=β, b=c(0,0), "logit")
 #' μ <- normalize(β)
-#' res <- multiRun(list(X=io$X,Y=io$Y,optargs=list(K=2)), list(
+#' res <- multiRun(list(X=io$X,Y=io$Y,K=2), list(
 #'   # morpheus
 #'   function(fargs) {
 #'     library(morpheus)
 #'     ind <- fargs$ind
-#'     computeMu(fargs$X[ind,],fargs$Y[ind],fargs$optargs)
+#'     computeMu(fargs$X[ind,], fargs$Y[ind], list(K=fargs$K))
 #'   },
 #'   # flexmix
 #'   function(fargs) {
 #'     library(flexmix)
 #'     ind <- fargs$ind
-#'     K <- fargs$optargs$K
+#'     K <- fargs$K
 #'     dat = as.data.frame( cbind(fargs$Y[ind],fargs$X[ind,]) )
 #'     out = refit( flexmix( cbind(V1, 1 - V1) ~ 0+., data=dat, k=K,
 #'       model=FLXMRglm(family="binomial") ) )
@@ -50,32 +51,34 @@
 #' for (i in 1:2)
 #'   res[[i]] <- alignMatrices(res[[i]], ref=μ, ls_mode="exact")
 #'
-#' # Monte-Carlo + optimParams from X,Y, morpheus VS flexmix ; first args n,p,β,b
-#' res <- multiRun(list(n=1000,p=1/2,β=β,b=c(0,0),optargs=list(link="logit")),list(
+#' # Monte-Carlo + optimParams from X,Y, morpheus VS flexmix
+#' res <- multiRun(list(n=1000,p=1/2,β=β,b=c(0,0),link="logit"),list(
 #'   # morpheus
 #'   function(fargs) {
 #'     library(morpheus)
-#'     K <- fargs$optargs$K
-#'     μ <- computeMu(fargs$X, fargs$Y, fargs$optargs)
-#'     optimParams(fargs$K,fargs$link,fargs$optargs)$run(list(β=μ))$β
+#'     K <- fargs$K
+#'     μ <- computeMu(fargs$X, fargs$Y, list(K=fargs$K))
+#'     o <- optimParams(fargs$X, fargs$Y, fargs$K, fargs$link, fargs$M)
+#'     o$run(list(β=μ))$β
 #'   },
 #'   # flexmix
 #'   function(fargs) {
 #'     library(flexmix)
-#'     K <- fargs$optargs$K
+#'     K <- fargs$K
 #'     dat <- as.data.frame( cbind(fargs$Y,fargs$X) )
 #'     out <- refit( flexmix( cbind(V1, 1 - V1) ~ 0+., data=dat, k=K,
 #'       model=FLXMRglm(family="binomial") ) )
-#'     sapply( seq_len(K), function(i) as.double( out@@components[[1]][[i]][,1] ) )
+#'     sapply( seq_len(K), function(i)
+#'       as.double( out@@components[[1]][[i]][,1] ) )
 #'   } ),
 #'   prepareArgs = function(fargs,index) {
 #'     library(morpheus)
-#'     io = generateSampleIO(fargs$n, fargs$p, fargs$β, fargs$b, fargs$optargs$link)
+#'     io = generateSampleIO(fargs$n, fargs$p, fargs$β, fargs$b, fargs$link)
 #'     fargs$X = io$X
 #'     fargs$Y = io$Y
 #'     fargs$K = ncol(fargs$β)
-#'     fargs$link = fargs$optargs$link
-#'     fargs$optargs$M = computeMoments(io$X,io$Y)
+#'     fargs$link = fargs$link
+#'     fargs$M = computeMoments(io$X,io$Y)
 #'     fargs
 #'   }, N=10, ncores=3)
 #' for (i in 1:2)

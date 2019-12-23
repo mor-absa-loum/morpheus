@@ -1,35 +1,40 @@
 #' Wrapper function for OptimParams class
 #'
-#' @param K Number of populations.
-#' @param link The link type, 'logit' or 'probit'.
 #' @param X Data matrix of covariables
 #' @param Y Output as a binary vector
+#' @param K Number of populations.
+#' @param link The link type, 'logit' or 'probit'.
+#' @param M the empirical cross-moments between X and Y (optional)
 #'
-#' @return An object 'op' of class OptimParams, initialized so that \code{op$run(x0)}
-#'   outputs the list of optimized parameters
+#' @return An object 'op' of class OptimParams, initialized so that
+#'   \code{op$run(θ0)} outputs the list of optimized parameters
 #'   \itemize{
 #'     \item p: proportions, size K
 #'     \item β: regression matrix, size dxK
 #'     \item b: intercepts, size K
 #'   }
-#'   θ0 is a vector containing respectively the K-1 first elements of p, then β by
-#'   columns, and finally b: \code{θ0 = c(p[1:(K-1)],as.double(β),b)}.
+#'   θ0 is a list containing the initial parameters. Only β is required
+#'   (p would be set to (1/K,...,1/K) and b to (0,...0)).
 #'
 #' @seealso \code{multiRun} to estimate statistics based on β, and
 #'   \code{generateSampleIO} for I/O random generation.
 #'
 #' @examples
 #' # Optimize parameters from estimated μ
-#' io = generateSampleIO(10000, 1/2, matrix(c(1,-2,3,1),ncol=2), c(0,0), "logit")
+#' io <- generateSampleIO(100,
+#'   1/2, matrix(c(1,-2,3,1),ncol=2), c(0,0), "logit")
 #' μ = computeMu(io$X, io$Y, list(K=2))
 #' o <- optimParams(io$X, io$Y, 2, "logit")
+#' \donttest{
 #' θ0 <- list(p=1/2, β=μ, b=c(0,0))
 #' par0 <- o$run(θ0)
 #' # Compare with another starting point
 #' θ1 <- list(p=1/2, β=2*μ, b=c(0,0))
 #' par1 <- o$run(θ1)
+#' # Look at the function values at par0 and par1:
 #' o$f( o$linArgs(par0) )
-#' o$f( o$linArgs(par1) )
+#' o$f( o$linArgs(par1) )}
+#'
 #' @export
 optimParams <- function(X, Y, K, link=c("logit","probit"), M=NULL)
 {
@@ -59,18 +64,20 @@ optimParams <- function(X, Y, K, link=c("logit","probit"), M=NULL)
     "Y"=as.integer(Y), "K"=as.integer(K), "Mhat"=as.double(M))
 }
 
-#' Encapsulated optimization for p (proportions), β and b (regression parameters)
-#'
-#' Optimize the parameters of a mixture of logistic regressions model, possibly using
-#' \code{mu <- computeMu(...)} as a partial starting point.
-#'
-#' @field li Link function, 'logit' or 'probit'
-#' @field X Data matrix of covariables
-#' @field Y Output as a binary vector
-#' @field K Number of populations
-#' @field d Number of dimensions
-#' @field W Weights matrix (iteratively refined)
-#'
+# Encapsulated optimization for p (proportions), β and b (regression parameters)
+#
+# Optimize the parameters of a mixture of logistic regressions model, possibly using
+# \code{mu <- computeMu(...)} as a partial starting point.
+#
+# @field li Link function, 'logit' or 'probit'
+# @field X Data matrix of covariables
+# @field Y Output as a binary vector
+# @field Mhat Vector of empirical moments
+# @field K Number of populations
+# @field n Number of sample points
+# @field d Number of dimensions
+# @field W Weights matrix (initialized at identity)
+#
 setRefClass(
   Class = "OptimParams",
 
@@ -124,8 +131,11 @@ setRefClass(
       c(L$p[1:(K-1)], as.double(t(L$β)), L$b)
     },
 
+    # TODO: relocate computeW in utils.R
     computeW = function(θ)
     {
+      "Compute the weights matrix from a parameters list"
+
       require(MASS)
       dd <- d + d^2 + d^3
       M <- Moments(θ)
@@ -138,7 +148,7 @@ setRefClass(
 
     Moments = function(θ)
     {
-      "Vector of moments, of size d+d^2+d^3"
+      "Compute the vector of theoretical moments (size d+d^2+d^3)"
 
       p <- θ$p
       β <- θ$β
@@ -157,7 +167,7 @@ setRefClass(
 
     f = function(θ)
     {
-      "Product t(hat_Mi - Mi) W (hat_Mi - Mi) with Mi(theta)"
+      "Function to minimize: t(hat_Mi - Mi(θ)) . W . (hat_Mi - Mi(θ))"
 
       L <- expArgs(θ)
       A <- as.matrix(Mhat - Moments(L))
@@ -166,7 +176,7 @@ setRefClass(
 
     grad_f = function(θ)
     {
-      "Gradient of f, dimension (K-1) + d*K + K = (d+2)*K - 1"
+      "Gradient of f: vector of size (K-1) + d*K + K = (d+2)*K - 1"
 
       L <- expArgs(θ)
       -2 * t(grad_M(L)) %*% W %*% as.matrix(Mhat - Moments(L))
@@ -174,7 +184,7 @@ setRefClass(
 
     grad_M = function(θ)
     {
-      "Gradient of the vector of moments, size (dim=)d+d^2+d^3 x K-1+K+d*K"
+      "Gradient of the moments vector: matrix of size d+d^2+d^3 x K-1+K+d*K"
 
       p <- θ$p
       β <- θ$β

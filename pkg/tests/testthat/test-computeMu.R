@@ -2,22 +2,22 @@ context("computeMu")
 
 test_that("on input of sufficient size, β/||β|| is estimated accurately enough",
 {
-  n = 100000
-  d = 2
-  K = 2
-  p = 1/2
+  n <- 100000
+  d <- 2
+  K <- 2
+  p <- 1/2
 
-  βs_ref = array( c(1,0,0,1 , 1,-2,3,1), dim=c(d,K,2) )
+  βs_ref <- array( c(1,0,0,1 , 1,-2,3,1), dim=c(d,K,2) )
   for (i in 1:(dim(βs_ref)[3]))
   {
-    μ_ref = normalize(βs_ref[,,i])
-    for (model in c("logit","probit"))
+    μ_ref <- normalize(βs_ref[,,i])
+    for (link in c("logit","probit"))
     {
-      cat("\n\n",model," :\n",sep="")
+      cat("\n\n",link," :\n",sep="")
 
-      io = generateSampleIO(n, p, βs_ref[,,i], rep(0,K), model)
-      μ = computeMu(io$X, io$Y, list(K=K))
-      μ_aligned = alignMatrices(list(μ), ref=μ_ref, ls_mode="exact")[[1]]
+      io <- generateSampleIO(n, p, βs_ref[,,i], rep(0,K), link)
+      μ <- computeMu(io$X, io$Y, list(K=K))
+      μ_aligned <- alignMatrices(list(μ), ref=μ_ref, ls_mode="exact")[[1]]
 
       #Some traces: 0 is not well estimated, but others are OK
       cat("Reference normalized matrix:\n")
@@ -25,7 +25,7 @@ test_that("on input of sufficient size, β/||β|| is estimated accurately enough
       cat("Estimated normalized matrix:\n")
       print(μ_aligned)
       cat("Difference norm (Matrix norm ||.||_1, max. abs. sum on a column)\n")
-      diff_norm = norm(μ_ref - μ_aligned)
+      diff_norm <- norm(μ_ref - μ_aligned)
       cat(diff_norm,"\n")
 
       #NOTE: 0.5 is loose threshold, but values around 0.3 are expected...

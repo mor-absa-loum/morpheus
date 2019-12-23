@@ -17,6 +17,12 @@
 #'   \item{index: the population index (in 1:K) for each row in X}
 #' }
 #'
+#' @examples
+#' # K = 3 so we give first two components of p: 0.3 and 0.3 (p[3] = 0.4)
+#' io <- generateSampleIO(1000, c(.3,.3),
+#'   matrix(c(1,3,-1,1,2,1),ncol=3), c(.5,-1,0), "logit")
+#' io$index[1] #number of the group of X[1,] and Y[1] (in 1...K)
+#'
 #' @export
 generateSampleIO = function(n, p, β, b, link)
 {
