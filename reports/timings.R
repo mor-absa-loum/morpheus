@@ -16,8 +16,8 @@ ourOptim <- function(X, Y, K, link)
 {
 	M <- computeMoments(X, Y)
 	mu <- computeMu(X, Y, list(K=K,M=M))
-	x_init = c(1/2, as.double(mu), c(0,0))
-	optimParams(K, link, list(M=M))$run(x_init)
+	x_init = list(p=rep(1/K,K-1), beta=mu, b=rep(0,K))
+	optimParams(X, Y, K, link, M, 1)$run(x_init)
 	NULL
 }
 

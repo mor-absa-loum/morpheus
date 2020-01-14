@@ -1,15 +1,19 @@
 #!/bin/bash
 
-#PBS -l nodes=1:ppn=16,mem=8gb,pmem=512mb
-#PBS -j oe
-
-#PBS -o .output
+#$ -N morpheus
+#$ -wd /workdir2/auder/morpheus/reports
+#$ -m abes
+#$ -M benjamin@auder.net
+#$ -pe make 50
 rm -f .output
-
-WORKDIR=/workdir2/auder/morpheus/reports
-cd $WORKDIR
+#$ -o .output
+#$ -j y
 
 module load R
 
+N=1000
+nc=50
+link="logit"
+
 # arg --vanilla maybe possible on cluster
-R --slave --args N=1000 nc=16 link=logit <timings.R >out 2>&1
+R --slave --args N=$N nc=$nc link=$link <timings.R >out 2>&1

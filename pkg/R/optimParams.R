@@ -5,6 +5,7 @@
 #' @param K Number of populations.
 #' @param link The link type, 'logit' or 'probit'.
 #' @param M the empirical cross-moments between X and Y (optional)
+#' @param nc Number of cores (default: 0 to use all)
 #'
 #' @return An object 'op' of class OptimParams, initialized so that
 #'   \code{op$run(θ0)} outputs the list of optimized parameters
@@ -36,7 +37,7 @@
 #' o$f( o$linArgs(par1) )}
 #'
 #' @export
-optimParams <- function(X, Y, K, link=c("logit","probit"), M=NULL)
+optimParams <- function(X, Y, K, link=c("logit","probit"), M=NULL, nc=0)
 {
   # Check arguments
   if (!is.matrix(X) || any(is.na(X)))
@@ -61,7 +62,7 @@ optimParams <- function(X, Y, K, link=c("logit","probit"), M=NULL)
 
   # Build and return optimization algorithm object
   methods::new("OptimParams", "li"=link, "X"=X,
-    "Y"=as.integer(Y), "K"=as.integer(K), "Mhat"=as.double(M))
+    "Y"=as.integer(Y), "K"=as.integer(K), "Mhat"=as.double(M), "nc"=as.integer(nc))
 }
 
 # Encapsulated optimization for p (proportions), β and b (regression parameters)
@@ -76,6 +77,7 @@ optimParams <- function(X, Y, K, link=c("logit","probit"), M=NULL)
 # @field K Number of populations
 # @field n Number of sample points
 # @field d Number of dimensions
+# @field nc Number of cores (OpenMP //)
 # @field W Weights matrix (initialized at identity)
 #
 setRefClass(
@@ -91,6 +93,7 @@ setRefClass(
     K = "integer",
     n = "integer",
     d = "integer",
+    nc = "integer",
     # Weights matrix (generalized least square)
     W = "matrix"
   ),
@@ -102,7 +105,7 @@ setRefClass(
 
       callSuper(...)
       if (!hasArg("X") || !hasArg("Y") || !hasArg("K")
-        || !hasArg("li") || !hasArg("Mhat"))
+        || !hasArg("li") || !hasArg("Mhat") || !hasArg("nc"))
       {
         stop("Missing arguments")
       }
@@ -141,7 +144,7 @@ setRefClass(
       M <- Moments(θ)
       Omega <- matrix( .C("Compute_Omega",
         X=as.double(X), Y=as.integer(Y), M=as.double(M),
-        pn=as.integer(n), pd=as.integer(d),
+        pnc=as.integer(nc), pn=as.integer(n), pd=as.integer(d),
         W=as.double(W), PACKAGE="morpheus")$W, nrow=dd, ncol=dd )
       MASS::ginv(Omega)
     },

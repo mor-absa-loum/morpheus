@@ -10,7 +10,7 @@ optimBeta <- function(N, n, p, beta, b, link, ncores)
         K <- ncol(fargs$beta)
         M <- computeMoments(fargs$X, fargs$Y)
         mu <- computeMu(fargs$X, fargs$Y, list(K=K, M=M))
-        op <- optimParams(fargs$X, fargs$Y, K, fargs$link, M)
+        op <- optimParams(fargs$X, fargs$Y, K, fargs$link, M, 1) #only 1 OpenMP core
         x_init <- list(p=rep(1/K,K-1), beta=mu, b=rep(0,K))
         res2 <- NULL
         tryCatch({
