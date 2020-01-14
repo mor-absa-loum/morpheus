@@ -114,7 +114,7 @@ void Compute_Omega(double* X, int* Y, double* M, int* pnc, int* pn, int* pd, dou
   // Symmetrize W: W[j,k] = W[k,j] for k > j
   for (int j=0; j<dim; j++)
   {
-    for (int k=j+1: k<dim; k++)
+    for (int k=j+1; k<dim; k++)
       W[mi(j,k,dim,dim)] = W[mi(k,j,dim,dim)];
   }
   free(g);
