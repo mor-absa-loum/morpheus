@@ -95,21 +95,27 @@ void Compute_Omega(double* X, int* Y, double* M, int* pnc, int* pn, int* pd, dou
       g[j] += Y[i] * X[mi(i,idx1,n,d)]*X[mi(i,idx2,n,d)]*X[mi(i,idx3,n,d)] - M[j];
     }
     // Add 1/n t(gi) %*% gi to W
-    for (int j=dim-1; j>=0; j--)
+    for (int j=0; j<dim; j++)
     {
       // This final nested loop is very costly. Some basic optimisations:
       double gj = g[j];
       int baseIdx = j * dim;
-      #pragma GCC unroll 100
-      for (int k=dim-1; k>=0; k--)
+      #pragma GCC unroll 32
+      for (int k=j; k>=0; k--)
         W[baseIdx+k] += gj * g[k];
     }
   }
   // Normalize W: x 1/n
   for (int j=0; j<dim; j++)
   {
-    for (int k=0; k<dim; k++)
+    for (int k=0; k<=j; k++)
       W[mi(j,k,dim,dim)] /= n;
+  }
+  // Symmetrize W: W[j,k] = W[k,j] for k > j
+  for (int j=0; j<dim; j++)
+  {
+    for (int k=j+1: k<dim; k++)
+      W[mi(j,k,dim,dim)] = W[mi(k,j,dim,dim)];
   }
   free(g);
 }
