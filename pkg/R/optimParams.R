@@ -253,7 +253,8 @@ setRefClass(
       res
     },
 
-    run = function(θ0)
+    # userW allows to bypass the W optimization by giving a W matrix
+    run = function(θ0, userW=NULL)
     {
       "Run optimization from θ0 with solver..."
 
@@ -279,13 +280,14 @@ setRefClass(
         stop("θ0$b: length K, no NA")
 
       # (Re)Set W to identity, to allow several run from the same object
-      W <<- diag(d+d^2+d^3)
+      W <<- if (is.null(userW)) diag(d+d^2+d^3) else userW
 
-      loopMax <- 2 #TODO: loopMax = 3 ? Seems not improving...
+      #NOTE: loopMax = 3 seems to not improve the final results.
+      loopMax <- ifelse(is.null(userW), 2, 1)
       x_init <- linArgs(θ0)
       for (loop in 1:loopMax)
       {
-        op_res = constrOptim( x_init, .self$f, .self$grad_f,
+        op_res <- constrOptim( x_init, .self$f, .self$grad_f,
           ui=cbind(
             rbind( rep(-1,K-1), diag(K-1) ),
             matrix(0, nrow=K, ncol=(d+1)*K) ),
