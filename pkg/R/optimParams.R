@@ -45,8 +45,8 @@ optimParams <- function(X, Y, K, link=c("logit","probit"), M=NULL, nc=0)
   if (!is.numeric(Y) || any(is.na(Y)) || any(Y!=0 & Y!=1))
     stop("Y: binary vector with 0 and 1 only")
   link <- match.arg(link)
-  if (!is.numeric(K) || K!=floor(K) || K < 2)
-    stop("K: integer >= 2")
+  if (!is.numeric(K) || K!=floor(K) || K < 2 || K > ncol(X))
+    stop("K: integer >= 2, <= d")
 
   if (is.null(M))
   {

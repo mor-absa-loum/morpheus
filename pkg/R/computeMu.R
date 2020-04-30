@@ -46,6 +46,8 @@ computeMu = function(X, Y, optargs=list())
     large_ratio <- ( abs(Σ[-d] / Σ[-1]) > 3 )
     K <- if (any(large_ratio)) max(2, which.min(large_ratio)) else d
   }
+  else if (K > d)
+    stop("K: integer >= 2, <= d")
 
   # Step 1: generate a family of d matrices to joint-diagonalize to increase robustness
   d = ncol(X)
