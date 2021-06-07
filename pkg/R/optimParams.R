@@ -1,4 +1,8 @@
+#' optimParams
+#'
 #' Wrapper function for OptimParams class
+#'
+#' @name optimParams
 #'
 #' @param X Data matrix of covariables
 #' @param Y Output as a binary vector
@@ -24,7 +28,7 @@
 #' # Optimize parameters from estimated μ
 #' io <- generateSampleIO(100,
 #'   1/2, matrix(c(1,-2,3,1),ncol=2), c(0,0), "logit")
-#' μ = computeMu(io$X, io$Y, list(K=2))
+#' μ <- computeMu(io$X, io$Y, list(K=2))
 #' o <- optimParams(io$X, io$Y, 2, "logit")
 #' \donttest{
 #' θ0 <- list(p=1/2, β=μ, b=c(0,0))
@@ -274,7 +278,8 @@ setRefClass(
       {
         stop("θ0$p: length K-1, no NA, positive integers, sum to <= 1")
       }
-      if (is.null(θ0$b))
+      # NOTE: [["b"]] instead of $b because $b would match $beta (in pkg-cran)
+      if (is.null(θ0[["b"]]))
         θ0$b = rep(0, K)
       else if (!is.numeric(θ0$b) || length(θ0$b) != K || any(is.na(θ0$b)))
         stop("θ0$b: length K, no NA")
@@ -282,7 +287,7 @@ setRefClass(
       # (Re)Set W to identity, to allow several run from the same object
       W <<- if (is.null(userW)) diag(d+d^2+d^3) else userW
 
-      #NOTE: loopMax = 3 seems to not improve the final results.
+      # NOTE: loopMax = 3 seems to not improve the final results.
       loopMax <- ifelse(is.null(userW), 2, 1)
       x_init <- linArgs(θ0)
       for (loop in 1:loopMax)

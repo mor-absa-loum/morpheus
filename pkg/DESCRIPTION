@@ -21,10 +21,10 @@ Suggests:
     devtools,
     flexmix,
     parallel,
-    testthat,
+    testthat (>= 3.0.0),
     roxygen2
 License: MIT + file LICENSE
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
 URL: https://github.com/yagu0/morpheus
 Collate:
     'utils.R'
@@ -34,3 +34,4 @@ Collate:
     'optimParams.R'
     'plot.R'
     'sampleIO.R'
+Config/testthat/edition: 3

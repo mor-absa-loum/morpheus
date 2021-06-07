@@ -12,6 +12,9 @@ NOTE: greek unicode letters are used in the code, because it's much nicer to wri
 and Σ than lambda, beta and Sigma - and also more importantly because it works well :)
 ...However CRAN demands ASCII files - therefore the presence of to-cran.sh script.
 
+Warning: tests won't run well on the non-UTF8 package. Run ./to-cran.sh and
+then inside pkg-cran call devtools::test().
+
 ## Example
 
 Install the package, then ?multiRun is a possible starting point.

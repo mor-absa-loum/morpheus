@@ -7,6 +7,8 @@
 #' basis (exact same inputs). It's even possible to compare methods on some
 #' deterministic design of experiments.
 #'
+#' @name multiRun
+#'
 #' @param fargs List of arguments for the estimation functions
 #' @param estimParams List of nf function(s) to apply on fargs
 #' @param prepareArgs Prepare arguments for the functions inside estimParams
@@ -36,8 +38,8 @@
 #'     library(flexmix)
 #'     ind <- fargs$ind
 #'     K <- fargs$K
-#'     dat = as.data.frame( cbind(fargs$Y[ind],fargs$X[ind,]) )
-#'     out = refit( flexmix( cbind(V1, 1 - V1) ~ 0+., data=dat, k=K,
+#'     dat <- as.data.frame( cbind(fargs$Y[ind],fargs$X[ind,]) )
+#'     out <- refit( flexmix( cbind(V1, 1 - V1) ~ 0+., data=dat, k=K,
 #'       model=FLXMRglm(family="binomial") ) )
 #'     normalize( matrix(out@@coef[1:(ncol(fargs$X)*K)], ncol=K) )
 #'   } ),
@@ -52,7 +54,7 @@
 #'   res[[i]] <- alignMatrices(res[[i]], ref=μ, ls_mode="exact")
 #'
 #' # Monte-Carlo + optimParams from X,Y, morpheus VS flexmix
-#' res <- multiRun(list(n=1000,p=1/2,β=β,b=c(0,0),link="logit"),list(
+#' res <- multiRun(list(n=1000,p=1/2,β=β,b=c(0,0),link="logit"), list(
 #'   # morpheus
 #'   function(fargs) {
 #'     library(morpheus)
@@ -66,19 +68,19 @@
 #'     library(flexmix)
 #'     K <- fargs$K
 #'     dat <- as.data.frame( cbind(fargs$Y,fargs$X) )
-#'     out <- refit( flexmix( cbind(V1, 1 - V1) ~ 0+., data=dat, k=K,
+#'     out <- refit( flexmix( cbind(V1, 1 - V1) ~ ., data=dat, k=K,
 #'       model=FLXMRglm(family="binomial") ) )
 #'     sapply( seq_len(K), function(i)
-#'       as.double( out@@components[[1]][[i]][,1] ) )
+#'       as.double( out@@components[[1]][[i]][2:(1+ncol(fargs$X)),1] ) )
 #'   } ),
 #'   prepareArgs = function(fargs,index) {
 #'     library(morpheus)
-#'     io = generateSampleIO(fargs$n, fargs$p, fargs$β, fargs$b, fargs$link)
-#'     fargs$X = io$X
-#'     fargs$Y = io$Y
-#'     fargs$K = ncol(fargs$β)
-#'     fargs$link = fargs$link
-#'     fargs$M = computeMoments(io$X,io$Y)
+#'     io <- generateSampleIO(fargs$n, fargs$p, fargs$β, fargs$b, fargs$link)
+#'     fargs$X <- io$X
+#'     fargs$Y <- io$Y
+#'     fargs$K <- ncol(fargs$β)
+#'     fargs$link <- fargs$link
+#'     fargs$M <- computeMoments(io$X,io$Y)
 #'     fargs
 #'   }, N=10, ncores=3)
 #' for (i in 1:2)
@@ -118,13 +120,13 @@ multiRun <- function(fargs, estimParams,
 
   if (ncores > 1)
   {
-    cl = parallel::makeCluster(ncores, outfile="")
+    cl <- parallel::makeCluster(ncores, outfile="")
     parallel::clusterExport(cl, c("fargs","verbose"), environment())
-    list_res = parallel::clusterApplyLB(cl, 1:N, estimParamAtIndex)
+    list_res <- parallel::clusterApplyLB(cl, 1:N, estimParamAtIndex)
     parallel::stopCluster(cl)
   }
   else
-    list_res = lapply(1:N, estimParamAtIndex)
+    list_res <- lapply(1:N, estimParamAtIndex)
 
   # De-interlace results: output one list per function
   nf <- length(estimParams)

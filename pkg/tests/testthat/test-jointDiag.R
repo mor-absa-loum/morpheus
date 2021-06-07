@@ -1,5 +1,3 @@
-context("jointDiag::ajd")
-
 #auxiliary to test diagonality
 .computeMuCheckDiag = function(X, Y, K, jd_method, β_ref)
 {
@@ -24,9 +22,9 @@ context("jointDiag::ajd")
   for (i in 1:K)
   {
     shouldBeDiag <- invβ %*% M2_t[,,i] %*% t(invβ)
-    expect_that(
+    expect_lt(
       mean( abs(shouldBeDiag[upper.tri(shouldBeDiag) | lower.tri(shouldBeDiag)]) ),
-      is_less_than(max_error) )
+      max_error)
   }
 }
 
