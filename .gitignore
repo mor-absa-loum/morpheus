@@ -1,5 +1,4 @@
 #ignore roxygen2 generated files
-NAMESPACE
 *.Rd
 !*-package.Rd
 
