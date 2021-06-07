@@ -64,8 +64,9 @@ void Compute_Omega(double* X, int* Y, double* M, int* pnc, int* pn, int* pd, dou
       W[j*dim+k] = 0.0;
   }
   double* g = (double*)malloc(dim*sizeof(double));
-  omp_set_num_threads(nc >= 1 ? nc : omp_get_num_procs());
-  #pragma omp parallel for
+  // TODO: stabilize this (for now, random result)
+//  omp_set_num_threads(nc >= 1 ? nc : omp_get_num_procs());
+//  #pragma omp parallel for
   for (int i=0; i<n; i++)
   {
     // g == gi:
