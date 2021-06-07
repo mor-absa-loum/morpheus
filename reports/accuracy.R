@@ -27,9 +27,9 @@ optimBeta <- function(N, n, p, beta, b, link, ncores)
         dat <- as.data.frame( cbind(fargs$Y,fargs$X) )
         res2 <- NULL
         tryCatch({
-          fm <- flexmix( cbind(V1, 1-V1) ~ .-V1, data=dat, k=K,
+          fm <- flexmix( cbind(V1, 1-V1) ~ ., data=dat, k=K,
             model = FLXMRglm(family = binomial(link = link)) )
-          pf <- mean(fm@posterior[["scaled"]][,1])
+          pf <- colMeans(fm@posterior[["scaled"]])
           out <- refit(fm)
           beta_b <- sapply( seq_len(K), function(i) {
             as.double( out@components[[1]][[i]][,1] )
