@@ -30,7 +30,7 @@
 #' @param ... Additional graphical parameters (xlab, ylab, ...)
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' β <- matrix(c(1,-2,3,1),ncol=2)
 #' mr <- multiRun(...) #see bootstrap example in ?multiRun
 #'                     #mr[[i]] is a list of estimated parameters matrices
@@ -69,7 +69,7 @@ plotHist <- function(mr, x, y, ...)
 #' @param ... Additional graphical parameters (xlab, ylab, ...)
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' β <- matrix(c(1,-2,3,1),ncol=2)
 #' mr <- multiRun(...) #see bootstrap example in ?multiRun
 #'                     #mr[[i]] is a list of estimated parameters matrices
@@ -107,7 +107,7 @@ plotBox <- function(mr, x, y, ...)
 #' @param ... Additional graphical parameters
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' β <- matrix(c(1,-2,3,1),ncol=2)
 #' mr <- multiRun(...) #see bootstrap example in ?multiRun
 #'                     #mr[[i]] is a list of estimated parameters matrices
